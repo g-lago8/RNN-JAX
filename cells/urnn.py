@@ -52,7 +52,7 @@ class UnitaryEvolutionRNNCell(BaseCell):
         self.perm = perm
         self.in_layer = eqx.nn.Linear(idim, hdim, use_bias=use_bias_in, key=subkeys[7])
 
-    def hh_layer (self, h:Inexact[Array, "hdim"]):
+    def _hh_layer (self, h:Inexact[Array, "hdim"]):
         h = jnp.exp(1j * self.diag1) * h
         h = jnp.fft.fft(h)
         h = 1 - 2 * self.v1 * (jnp.dot(self.v1, h)) / jnp.linalg.norm(self.v1, ord=2)
@@ -85,7 +85,7 @@ class UnitaryEvolutionRNNCell(BaseCell):
         """
         h, = state # carry for this cell is only the hidden state!
         x = self.in_layer(x)
-        h = self.hh_layer(h)
+        h = self._hh_layer(h)
         h = self.modrelu(h + x)
         return (h,), h
         

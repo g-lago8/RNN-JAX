@@ -27,23 +27,27 @@ class RNN(eqx.Module):
     def __call__(self, x:Inexact[Array, "seq_len idim"]):
         scan_fn = lambda state, x_t : self.cell(x_t, state)
         dtype = jnp.complex64 if self.cell.complex_state else jnp.float32
-        print(dtype)
         initial_state = tuple(jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes)
         last_state, all_outs = jax.lax.scan(scan_fn, initial_state, x)
         return self.out_layer(all_outs[-1])
 
 
 if __name__ == "__main__":
-    from cells import UnitaryEvolutionRNNCell, LongShortTermMemory, ElmanRNNCell
+    from cells import UnitaryEvolutionRNNCell, LongShortTermMemory, ElmanRNNCell, CoupledOscillatoryRNNCell
     key = jr.key(0)
-    urnn_cell = UnitaryEvolutionRNNCell(10, 16, use_bias_in=True, key = key)
+    idim = 10
+    hdim = 16
+    urnn_cell = UnitaryEvolutionRNNCell(idim, hdim, use_bias_in=True, key = key)
     urnn = RNN(urnn_cell, 1, key=key)
-    x = jr.normal(key, (100, 10))
+    x = jr.normal(key, (100, idim))
     print(urnn(x))
-    lstm_cell = LongShortTermMemory(10, 16, key=key)
+    lstm_cell = LongShortTermMemory(idim, hdim, key=key)
     lstm = RNN(lstm_cell, 1, key=key)
     print(lstm(x))
-    rnn_cell = ElmanRNNCell(10, 16, key=key)
+    rnn_cell = ElmanRNNCell(idim, hdim, key=key)
     rnn = RNN(rnn_cell, 1, key=key)
     print(rnn(x))
+    cornn_cell = CoupledOscillatoryRNNCell(idim, hdim, 1., 1., 0.01, key=key)
+    cornn = RNN(cornn_cell, 1, key=key)
+    print(cornn(x))
 
