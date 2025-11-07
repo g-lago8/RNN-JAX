@@ -9,6 +9,9 @@ from typing import Tuple
 from jaxtyping import Array
 
 
+# TODO: reimplement from zero, since the implementations in Equinox does
+#  not seem to have particular optimization tricks anyway.
+
 class LongShortTermMemory(BaseCell):
     lstm: eqx.nn.LSTMCell
 
@@ -41,9 +44,9 @@ class GatedRecurrentUnit(BaseCell):
             hdim (int): hidden dimension
             key (PRNGKey): pseudo-RNG key
         """
+        super().__init__(idim, hdim)
         self.complex_state = False
         self.states_shapes = ((hdim,))
-        super().__init__(idim, hdim)
         self.gru =eqx.nn.GRUCell(idim, hdim, key=key, **gru_kwargs)
     
     def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
