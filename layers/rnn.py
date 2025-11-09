@@ -28,7 +28,9 @@ def concat_real_imag(x:Complex[Array, "..."], axis=-1):
     x_imag = jnp.imag(x)
     return jnp.concatenate([x_real, x_imag], axis=axis)
 
-    
+
+# TODO: is no output layer cleaner, giving the user freedom to choose the readout function?
+
 class RNN(eqx.Module):
 
     cell: BaseCell
@@ -66,7 +68,7 @@ class RNN(eqx.Module):
         last_state, all_outs = jax.lax.scan(scan_fn, initial_state, x)
         if self.cell.complex_state:
             all_outs= concat_real_imag(all_outs)
-        return self.out_layer(all_outs[-1])
+        return self.out_layer(all_outs[-1]), all_outs
 
 
 class BidirectionalRNN(eqx.Module):
@@ -102,12 +104,13 @@ class BidirectionalRNN(eqx.Module):
         scan_fn = lambda state, x_t : self.cell(x_t, state)
         dtype = jnp.complex64 if self.cell.complex_state else jnp.float32
         initial_state = tuple(jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes)
-        last_state, all_outs = jax.lax.scan(scan_fn, initial_state, x)
-        last_state_reverse, all_outs_reverse = jax.lax.scan(scan_fn, initial_state, x[::-1])
+        last_state, outs = jax.lax.scan(scan_fn, initial_state, x)
+        last_state_reverse, outs_reverse = jax.lax.scan(scan_fn, initial_state, x[::-1])
         if self.cell.complex_state:
-            all_outs = concat_real_imag(all_outs)
-            all_outs_reverse = concat_real_imag(all_outs_reverse)
-        return self.out_layer(jnp.concat([all_outs[-1], all_outs_reverse[-1]]))
+            outs = concat_real_imag(outs)
+            outs_reverse = concat_real_imag(outs_reverse)
+        all_outs = jnp.concat([outs[-1], outs_reverse[-1]])
+        return self.out_layer(all_outs[-1]), all_outs
 
 
 
