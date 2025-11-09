@@ -4,40 +4,72 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 from typing import Callable
-from jaxtyping import Inexact, Array
+from jaxtyping import Inexact, Array, PRNGKeyArray
 from cells.base import BaseCell
-
-
-init_dict = {
-    'glorot': jax.nn.initializers.glorot_normal(),
-    'orthogonal': jax.nn.initializers.orthogonal(),
-    'uniform': lambda key, shape: jr.uniform(key, shape, minval=-1, maxval=1),
-    'zeros': jax.nn.initializers.zeros
-}
-
-nonlinearity_dict={
-    'relu': jax.nn.relu,
-    'tanh': jax.nn.tanh,
-    'sigmoid': jax.nn.sigmoid
-}
+from jax.nn.initializers import Initializer
 
 class ElmanRNNCell(BaseCell):
     w_hh:Inexact[Array, "hdim hdim"]
     w_ih:Inexact[Array, "hdim idim"]
     b: Inexact[Array, "hdim"]
     nonlinearity: Callable
-    def __init__(self, idim, hdim, kernel_init="glorot", recurrent_kernel_init="orthogonal", bias_init="zeros", nonlinearity='relu', *, key):
+    def __init__(self, idim, hdim, kernel_init=jax.nn.initializers.glorot_normal(), recurrent_kernel_init=jax.nn.initializers.orthogonal(), bias_init=jax.nn.initializers.zeros, nonlinearity=jax.nn.relu, *, key):
+        """Elman RNN, also known as Vanilla RNN or Simple RNN, cell. its update follows the equation 
+        `h(t+1) = nonlinearity(W_h h(t) + W_x x(t+1) + b)`  
+        
+        Args:
+            idim (int): input dimension
+            hdim (int): hidden dimension
+            key (PRNGKeyArray): pseudoRNG key
+            kernel_init (jax.nn.initializers.Initializer, optional): _description_. Defaults to `initializers.glorot_normal()`.
+            recurrent_kernel_init (jax.nn.initializers.Initializer, optional): _description_. Defaults to a `initializers.normal(stddev=1)`.
+            bias_init (jax.nn.initializers.Initializer, optional): _description_. Defaults to `initializers.zeros`.
+            nonlinearity (Callable, optional): _description_. Defaults to `jax.nn.relu`.
+        """
         super().__init__(idim, hdim)
         self.states_shapes=((hdim,))
         self.complex_state=False
         ikey, hkey, bkey = jr.split(key, 3)
-        self.w_ih = init_dict[kernel_init](ikey, (hdim, idim))
-        self.w_hh = init_dict[recurrent_kernel_init](hkey, (hdim, hdim))
-        self.b = init_dict[bias_init](bkey, hdim)
-        self.nonlinearity = nonlinearity_dict[nonlinearity]
+        self.w_ih = kernel_init(ikey, (hdim, idim))
+        self.w_hh = recurrent_kernel_init(hkey, (hdim, hdim))
+        self.b = bias_init(bkey, hdim)
+        self.nonlinearity = nonlinearity
 
     def __call__(self, x: Array, state: Tuple[Array, ...]) -> Tuple[Tuple[Array, ...], Array]:
         h, = state
         new_h = self.nonlinearity(self.w_hh @ h + self.w_ih @ x + self.b)
         return (new_h,), new_h
         
+
+class IndRNNCell(BaseCell):
+    w_hh:Inexact[Array, "hdim"]
+    w_ih:Inexact[Array, "hdim idim"]
+    b: Inexact[Array, "hdim"]
+    nonlinearity: Callable
+
+    def __init__(self, idim, hdim, kernel_init=jax.nn.initializers.glorot_normal(), recurrent_kernel_init=jax.nn.initializers.normal(stddev=1.), bias_init=jax.nn.initializers.zeros, nonlinearity=jax.nn.relu, *, key):
+        """Independent RNN cell. This type of RNN is similar to a simple RNN, but the h-to-h matrix is diagonal, therefore neurons update independently
+
+        Args:
+            idim (int): input dimension
+            hdim (int): hidden dimension
+            key (PRNGKeyArray): pseudoRNG key
+            kernel_init (jax.nn.initializers.Initializer, optional): _description_. Defaults to `initializers.glorot_normal()`.
+            recurrent_kernel_init (jax.nn.initializers.Initializer, optional): _description_. Defaults to a `initializers.normal(stddev=1)`.
+            bias_init (jax.nn.initializers.Initializer, optional): _description_. Defaults to `initializers.zeros`.
+            nonlinearity (Callable, optional): _description_. Defaults to `jax.nn.relu`.
+        """
+        super().__init__(idim, hdim)
+        self.states_shapes=((hdim,))
+        self.complex_state=False
+        ikey, hkey, bkey = jr.split(key, 3)
+        self.w_ih = kernel_init(ikey, (hdim, idim))
+        self.w_hh = recurrent_kernel_init(hkey, (hdim,))
+        self.b = bias_init(bkey, hdim)
+        self.nonlinearity = nonlinearity
+
+    def __call__(self, x: Array, state: Tuple[Array]):
+        h, = state
+        new_h = self.nonlinearity(self.w_hh * h + self.w_ih @ x + self.b)
+        return (new_h,), new_h
+
