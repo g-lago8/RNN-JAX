@@ -1,11 +1,11 @@
 import numpy as np
 import jax
+import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from cells.base import BaseCell
 from typing import Sequence, Callable, Tuple
 from jaxtyping import Array, Float
-from cells.utils import nonlinearity_dict
 
 
 class CoupledOscillatoryRNNCell(BaseCell):
@@ -17,17 +17,19 @@ class CoupledOscillatoryRNNCell(BaseCell):
     w_z: Float[Array, "hdim hdim"] 
     b: Float[Array, "hdim"]
     nonlinearity:Callable
-    def __init__(self, idim, hdim, gamma, eps, dt, nonlinearity='relu', heterogeneous=False, *, key):
+    def __init__(self, idim, hdim, gamma, eps, dt, nonlinearity=jax.nn.relu, heterogeneous=False, *, key):
         super().__init__(idim, hdim)
         self.states_shapes = ((hdim,), (hdim,))
         self.complex_state = False
         if heterogeneous:
-            assert isinstance(gamma, Sequence) and len(gamma) == 2, "porcoddue bro"
-            assert isinstance(eps, Sequence) and len(eps) == 2, "ziopera fra"
+            assert isinstance(gamma, Sequence) and len(gamma) == 2, "if heterogeneous==True, gamma must be a tuple (gamma_min, gamma_max)"
+            assert isinstance(eps, Sequence) and len(eps) == 2, "if heterogeneous==True, eps must ne a tuple (eps_min, eps_max)"
             gamma_key, eps_key, key = jr.split(key, 3)
             self.gamma = jr.uniform(gamma_key, (hdim,), minval=gamma[0], maxval=gamma[1])
             self.eps = jr.uniform(eps_key, (hdim,), minval=gamma[0], maxval=gamma[1])
         else:
+            assert jnp.isscalar(gamma), "if heterogeneous==False, gamma must be a scalar"
+            assert jnp.isscalar(eps), "if heterogeneous==False, eps must be a scalar"
             self.gamma = gamma
             self.eps = eps
         self.dt = dt
@@ -36,7 +38,7 @@ class CoupledOscillatoryRNNCell(BaseCell):
         self.w_h = jr.uniform(hkey, (hdim, hdim), minval= - 1 / jnp.sqrt(hdim), maxval = 1 / jnp.sqrt(hdim))
         self.w_z = jr.uniform(zkey, (hdim, hdim), minval= - 1 / jnp.sqrt(hdim), maxval = 1 / jnp.sqrt(hdim))
         self.b = jnp.zeros((hdim,))
-        self.nonlinearity = nonlinearity_dict[nonlinearity]
+        self.nonlinearity = nonlinearity
 
 
     def __call__(self, x: Array, state: Tuple[Array, Array]) -> Tuple[Tuple[Array, Array], Array]:
