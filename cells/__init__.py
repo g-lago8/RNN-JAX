@@ -1,5 +1,5 @@
-from base import BaseCell
-from lstm import LongShortTermMemory, GatedRecurrentUnit
-from urnn import UnitaryEvolutionRNNCell
-from elman import ElmanRNNCell
-from cornn import CoupledOscillatoryRNNCell
+from cells.base import BaseCell
+from cells.gated import LongShortTermMemory, GatedRecurrentUnit
+from cells.unitary import UnitaryEvolutionRNNCell
+from cells.vanilla import ElmanRNNCell
+from cells.obscillator import CoupledOscillatoryRNNCell

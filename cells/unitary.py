@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
-from base import BaseCell
+from cells.base import BaseCell
 from typing import Sequence, Callable, Tuple
 from jaxtyping import PyTree, Array, ArrayLike, Float, Inexact, Int, PRNGKeyArray, Complex
 

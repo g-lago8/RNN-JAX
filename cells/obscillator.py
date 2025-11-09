@@ -2,15 +2,11 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from base import BaseCell
+from cells.base import BaseCell
 from typing import Sequence, Callable, Tuple
 from jaxtyping import Array, Float
+from cells.utils import nonlinearity_dict
 
-nonlinearity_dict={
-    'relu': jax.nn.relu,
-    'tanh': jax.nn.tanh,
-    'sigmoid': jax.nn.sigmoid
-}
 
 class CoupledOscillatoryRNNCell(BaseCell):
     gamma: float | Array
