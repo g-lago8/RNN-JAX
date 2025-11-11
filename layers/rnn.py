@@ -15,7 +15,7 @@ import jax.random as jr
 import jax.numpy as jnp
 from jaxtyping import Inexact, Array, Complex
 from cells.base import BaseCell
-
+jax.config.update("jax_debug_nans", 'true')
 
 def concat_real_imag(x: Complex[Array, "..."], axis=-1):
     """Concatenate real and image parts of an array
@@ -123,7 +123,7 @@ class BidirectionalRNN(eqx.Module):
             outs = concat_real_imag(outs)
             outs_reverse = concat_real_imag(outs_reverse)
         all_outs = jnp.concat([outs[-1], outs_reverse[-1]])
-        return self.out_layer(all_outs[-1]), all_outs
+        return self.out_layer(all_outs), all_outs
 
 
 if __name__ == "__main__":
@@ -132,6 +132,7 @@ if __name__ == "__main__":
         LongShortTermMemory,
         ElmanRNNCell,
         CoupledOscillatoryRNNCell,
+        LipschitzRNNCell
     )
 
     key = jr.key(0)
@@ -164,3 +165,13 @@ if __name__ == "__main__":
     print("Bidirectional LSTM")
     bidirectional_lstm = BidirectionalRNN(lstm_cell, 1, key=key)
     print(bidirectional_lstm(x))
+
+    liprnn_cell = LipschitzRNNCell(idim, hdim, 0.65, 1., 0.65, 1., 0.001, 1/16, key=key)
+    liprnn = RNN(liprnn_cell, 1, key=key)
+    print("Lipschitz RNN, Euler")
+    print(liprnn(x))
+
+    liprnn_cell = LipschitzRNNCell(idim, hdim, 0.65, 1., 0.65, 1., 0.001, 1/16, key=key, discretization='rk2')
+    liprnn = RNN(liprnn_cell, 1, key=key)
+    print("Lipschitz RNN, RK2")
+    print(liprnn(x))
