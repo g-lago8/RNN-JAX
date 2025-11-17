@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
 from cells.base import BaseCell
-from typing import Sequence, Callable, Tuple
+from typing import Optional, Sequence, Callable, Tuple
 from jaxtyping import (
     PyTree,
     Array,
@@ -35,19 +35,31 @@ class UnitaryEvolutionRNNCell(BaseCell):
     perm: Int[Array, "hdim"]
     # h0: Float[Array, "hdim"]
     in_layer: eqx.nn.Linear
-    modrelu: Callable
+    nonlinearity: Callable
     states_shapes: Tuple
 
     def __init__(
         self,
         idim,
         hdim,
+        nonlinearity: Optional[Callable[[Array], Array]]= None,
         permutation_type="identity",
-        nonlinerity: Callable = jax.nn.relu,
+        use_bias_in: bool = True,
         *,
         key,
-        use_bias_in,
     ):
+        """The original unitary RNN (Arjovski et al. 2016, https://arxiv.org/abs/1511.06464), that parametrizes the unitary hidden-to-hidden matrix using diagonal matrices with eigenvalues of module 1,
+        Fourier transforms and Householder reflectors and a permutation matrix. 
+
+        Args:
+            idim (int): input dimension
+            hdim (int): hidden dimension
+            key (Array): RNG key
+            nonlinerity (Callable, optional): non-linear activation function. Defaults to None. If None, the activation function is the modReLU function, with biases initialized to 0. 
+            permutation_type (str, optional): permutation type. Allowed values are "random" and "identity". Defaults to "identity".
+            use_bias_in (bool): whether to use the bias in the input or not
+
+        """
         super().__init__(idim, hdim)
         self.states_shapes = (hdim,)
         self.complex_state = True
@@ -65,9 +77,10 @@ class UnitaryEvolutionRNNCell(BaseCell):
         self.diag3 = jr.uniform(subkeys[4], (hdim,), minval=-np.pi, maxval=np.pi)
 
         # self.h0 = jr.uniform(subkeys[5], (hdim,), minval= - np.sqrt(3 / (2 * hdim)), maxval = np.sqrt(3 / (2 * hdim)))
-        self.modrelu = ModReLU(
-            jnp.zeros(hdim)
-        )  # initialize biases in the ModReLU non-linearity
+        if nonlinearity is None:
+            self.nonlinearity = ModReLU(jnp.zeros(hdim))  # initialize biases in the ModReLU non-linearity
+        else:
+            self.nonlinearity = nonlinearity
         allowed_permutations = ["random", "identity"]
         if permutation_type == "random":
             perm = jr.permutation(subkeys[6], hdim)
@@ -98,12 +111,12 @@ class UnitaryEvolutionRNNCell(BaseCell):
 
             with W a unitary matrix parametrized as follows:
 
-            W = D_3 * R_2 * F^{-1} * D_2 * P _ R_1 * F * D_1,
+            W = D_3 * R_2 * Fi * D_2 * P * R_1 * F * D_1,
 
             where
             - D matrices are diagonal complex matrices
             - R matrices are Householder reflectors
-            - F is the DFT operation
+            - F is the DFT operation and Fi its inverse
             - P is a permuation matrix
 
 
@@ -114,14 +127,22 @@ class UnitaryEvolutionRNNCell(BaseCell):
         (h,) = state  # carry for this cell is only the hidden state!
         x = self.in_layer(x)
         h = self._hh_layer(h)
-        h = self.modrelu(h + x)
+        h = self.nonlinearity(h + x)
         return (h,), h
+
+
+class FullCapacityUnitaryRNNCell(BaseCell):
+    pass # TODO : fcuRNN
+
+class EfficientUnitaryRNNCell(BaseCell):
+    pass # TODO: euRNN
+
 
 
 if __name__ == "__main__":
     key = jr.key(0)
     keys = jr.split(key, 3)
-    rnn = UnitaryEvolutionRNNCell(10, 16, "random", key=keys[0], use_bias_in=False)
+    rnn = UnitaryEvolutionRNNCell(10, 16, permutation_type="random", key=keys[0])
     x = jr.uniform(keys[1], (10,))
     h = jr.uniform(keys[2], (16,))
     print(rnn(x, (h,)))
