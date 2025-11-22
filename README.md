@@ -11,7 +11,7 @@ Implementation of various flavours of recurrent neural networks in Jax and Equin
   - ...
 
 - [x] Bidirectional layer
-- [ ] Deep architectures (bidirectional or not)
+- [x] Deep architectures (bidirectional or not)
 - [ ] Examples and benchmarks (e.g. copy task, Lorenz, sequential MNIST)
 
 - Advanced

@@ -28,6 +28,7 @@ class LongShortTermMemory(BaseCell):
         self.complex_state = False
         self.states_shapes = ((hdim,), (hdim,))
         self.lstm = eqx.nn.LSTMCell(idim, hdim, key=key, **lstm_kwargs)
+        self.lstm = eqx.tree_at(lambda tree: tree.bias, self.lstm, jnp.ones_like(self.lstm.bias))
 
     def __call__(
         self, x: jax.Array, state: Tuple[Array, ...]
