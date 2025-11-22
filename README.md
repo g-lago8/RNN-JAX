@@ -12,7 +12,12 @@ Implementation of various flavours of recurrent neural networks in Jax and Equin
 
 - [x] Bidirectional layer
 - [x] Deep architectures (bidirectional or not)
-- [ ] Examples and benchmarks (e.g. copy task, Lorenz, sequential MNIST)
+- [ ] Examples and benchmarks
+  - [x] Adding task
+  - [ ] Copy task
+  - [ ] Dynamical system forecasting
+  - [ ] Pixel-by-pixel image classification
+  - **Advanced**: Char-level language modeling 
 
 - Advanced
   - Linear recurrence models (SSM and LRU)
