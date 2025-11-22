@@ -6,7 +6,7 @@ The implemented classes are
 """
 
 import sys
-from typing import Sequence
+from typing import Sequence, Union
 
 sys.path.append("..")
 sys.path.append("../cells")
@@ -94,6 +94,54 @@ class BidirectionalRNN(eqx.Module):
         return self.out_layer(jnp.concat([hidden[-1], hidden_reverse[-1]])), (hidden, hidden_reverse)
 
 
+class DeepRNN(eqx.Module):
+    layers:  Sequence[RNNEncoder]
+    n_layers: int
+    hdim: Sequence[int]
+    odim: int
+    out_layer: eqx.nn.Linear
+
+    def __init__(self, layers: Sequence[BaseCell], odim, *, key):
+        assert len(layers) >= 1, "layers must be a non-empty sequence of Encoder objects, got an empty sequence"
+        self.layers = [RNNEncoder(cell) for cell in layers]
+        self.odim = odim
+        self.n_layers = len(self.layers)
+        out_key, key = jr.split(key)
+        self.hdim = [l.hdim for l in layers]
+        self.out_layer = eqx.nn.Linear(self.hdim[-1], self.odim, key=out_key)
+
+    def __call__(self, x, *, key=None):
+        all_hidden = []
+        for layer in self.layers:
+            x = layer(x) 
+            all_hidden.append(x)
+        return self.out_layer(all_hidden[-1][-1]), all_hidden
+
+        
+class DeepBidirectionalRNN(eqx.Module):
+    layers:  Sequence[BidirectionalRNNEncoder]
+    n_layers: int
+    hdim: Sequence[int]
+    odim: int
+    out_layer: eqx.nn.Linear
+
+    def __init__(self, layers: Sequence[BaseCell], odim, *, key):
+        assert len(layers) >= 1, "layers must be a non-empty sequence of Encoder objects, got an empty sequence"
+        self.layers = [BidirectionalRNNEncoder(cell) for cell in layers]
+        self.odim = odim
+        self.n_layers = len(self.layers)
+        out_key, key = jr.split(key)
+        self.hdim = [l.hdim for l in layers]
+        self.out_layer = eqx.nn.Linear(self.hdim[-1] * 2, self.odim, key=out_key)
+
+    def __call__(self, x, *, key=None):
+        all_hidden = []
+        for layer in self.layers:
+            h, h_reverse = layer(x) 
+            all_hidden.append((h, h_reverse))
+            x = jnp.concat([h, h_reverse], axis=1)
+            breakpoint()
+        return self.out_layer(jnp.concat([all_hidden[-1][0][-1], all_hidden[-1][1][-1]])), all_hidden
 
 
 if __name__ == "__main__":
@@ -145,3 +193,25 @@ if __name__ == "__main__":
     liprnn = RNN(liprnn_cell, 1, key=key)
     print("Lipschitz RNN, RK2")
     print(liprnn(x))
+
+    # deep rnn
+
+    print("deep LSTM")
+    cells = [
+        LongShortTermMemory(idim, hdim, key = key),
+        LongShortTermMemory(hdim, hdim, key = key), # notice the second - nth should take hdim as input dim
+    ]
+
+    deep_lstm = DeepRNN(cells, 1, key=key)
+    
+    print(deep_lstm(x))
+
+    print("deep bidirectional LSTM")
+    cells = [
+        LongShortTermMemory(idim, hdim, key = key),
+        LongShortTermMemory(2*hdim, hdim, key = key), # notice the second - nth should take 2*hdim as input dim
+        LongShortTermMemory(2*hdim, hdim, key = key), # notice the second - nth should take 2*hdim as input dim
+    ]
+
+    deep_lstm = DeepBidirectionalRNN(cells, 1, key=key)
+    print(deep_lstm(x))
