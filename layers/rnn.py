@@ -6,6 +6,7 @@ The implemented classes are
 """
 
 import sys
+from typing import Sequence
 
 sys.path.append("..")
 sys.path.append("../cells")
@@ -15,28 +16,13 @@ import jax.random as jr
 import jax.numpy as jnp
 from jaxtyping import Inexact, Array, Complex
 from cells.base import BaseCell
+from utils.utils import concat_real_imag
+from layers.encoder import RNNEncoder, BidirectionalRNNEncoder
 jax.config.update("jax_debug_nans", 'true')
-
-def concat_real_imag(x: Complex[Array, "..."], axis=-1):
-    """Concatenate real and image parts of an array
-
-    Args:
-        x (Complex[Array]): complex array
-        axis (int, optional): axis of the concatenation. Defaults to -1.
-
-    Returns:
-        Array: a real concatenated array
-    """
-    x_real = jnp.real(x)
-    x_imag = jnp.imag(x)
-    return jnp.concatenate([x_real, x_imag], axis=axis)
-
-
-# TODO: is no output layer cleaner, giving the user freedom to choose the readout function?
 
 
 class RNN(eqx.Module):
-    cell: BaseCell
+    encoder: RNNEncoder
     hdim: int
     odim: int
     out_layer: eqx.nn.Linear
@@ -44,43 +30,35 @@ class RNN(eqx.Module):
     def __init__(self, cell: BaseCell, odim, *, key):
         """RNN, implemented with `jax.lax.scan`.
 
-        This class takes a cell and iterates it through an input sequence, from first to last
+        This class takes a cell and iterates it through an input sequence, from first to last, 
+        then transforms linearly the last hidden state
 
         Args:
             cell (BaseCell): the cell implementing the logic of a single forward pass in time
             odim (int): output dimension
             key (PRNGKeyArray): random key
         """
-        self.cell = cell
+        encoder_key, key = jr.split(key)
+        self.encoder = RNNEncoder(cell, key=encoder_key)
         self.odim = odim
         out_key, key = jr.split(key)
-        self.hdim = (
-            self.cell.hdim if not self.cell.complex_state else self.cell.hdim * 2
-        )
+        self.hdim = self.encoder.hdim
         self.out_layer = eqx.nn.Linear(self.hdim, odim, key=out_key)
 
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
-        """Calls the cell on an input sequence x
-
+        """Calls the encoder on an input sequence x and 
         Args:
             x (Array): input sequence, an array of shape (seq_len, idim)
 
         Returns:
             y (Array): output array, obtained applying the output transformation to the last state of the network
         """
-        scan_fn = lambda state, x_t: self.cell(x_t, state)
-        dtype = jnp.complex64 if self.cell.complex_state else jnp.float32
-        initial_state = tuple(
-            jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes
-        )
-        last_state, all_outs = jax.lax.scan(scan_fn, initial_state, x)
-        if self.cell.complex_state:
-            all_outs = concat_real_imag(all_outs)
+        all_outs = self.encoder(x)
         return self.out_layer(all_outs[-1]), all_outs
 
 
 class BidirectionalRNN(eqx.Module):
-    cell: BaseCell
+    encoder: BidirectionalRNNEncoder
     hdim: int
     odim: int
     out_layer: eqx.nn.Linear
@@ -93,17 +71,15 @@ class BidirectionalRNN(eqx.Module):
             odim (int): output dimension
             key (PRNGKeyArray): random key
         """
-        self.cell = cell
+        self.encoder = BidirectionalRNNEncoder(cell)
         self.odim = odim
         out_key, key = jr.split(key)
-        self.hdim = (
-            self.cell.hdim * 2 if not self.cell.complex_state else self.cell.hdim * 4
-        )
+        self.hdim = self.encoder.hdim
         self.out_layer = eqx.nn.Linear(self.hdim, odim, key=out_key)
 
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
-        """Calls the cell on an input sequence x, in both directions
-
+        """Calls the cell on an input sequence x, in both directions,
+        and applies a linear layer
         Args:
             x (Array): input sequence, an array of shape (seq_len, idim)
 
@@ -111,19 +87,13 @@ class BidirectionalRNN(eqx.Module):
             y (Array): output array, obtained applying the output transformation
             to a concatenation of the two states obtained iterating the network
             from first to last and form last to first
+            all_hidden (Tuple[Array, Array]): all hidden states.
+            all_hidden[0] are the first-to-last states, all_hidden[1] are the last-to-first states
         """
-        scan_fn = lambda state, x_t: self.cell(x_t, state)
-        dtype = jnp.complex64 if self.cell.complex_state else jnp.float32
-        initial_state = tuple(
-            jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes
-        )
-        last_state, outs = jax.lax.scan(scan_fn, initial_state, x)
-        last_state_reverse, outs_reverse = jax.lax.scan(scan_fn, initial_state, x[::-1])
-        if self.cell.complex_state:
-            outs = concat_real_imag(outs)
-            outs_reverse = concat_real_imag(outs_reverse)
-        all_outs = jnp.concat([outs[-1], outs_reverse[-1]])
-        return self.out_layer(all_outs), all_outs
+        hidden, hidden_reverse = self.encoder(x)
+        return self.out_layer(jnp.concat([hidden[-1], hidden_reverse[-1]])), (hidden, hidden_reverse)
+
+
 
 
 if __name__ == "__main__":
