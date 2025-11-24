@@ -42,20 +42,20 @@ class UnitaryEvolutionRNNCell(BaseCell):
         self,
         idim,
         hdim,
-        nonlinearity: Optional[Callable[[Array], Array]]= None,
+        nonlinearity: Optional[Callable[[Array], Array]] = None,
         permutation_type="identity",
         use_bias_in: bool = True,
         *,
         key,
     ):
         """The original unitary RNN (Arjovski et al. 2016, https://arxiv.org/abs/1511.06464), that parametrizes the unitary hidden-to-hidden matrix using diagonal matrices with eigenvalues of module 1,
-        Fourier transforms and Householder reflectors and a permutation matrix. 
+        Fourier transforms and Householder reflectors and a permutation matrix.
 
         Args:
             idim (int): input dimension
             hdim (int): hidden dimension
             key (Array): RNG key
-            nonlinerity (Callable, optional): non-linear activation function. Defaults to None. If None, the activation function is the modReLU function, with biases initialized to 0. 
+            nonlinerity (Callable, optional): non-linear activation function. Defaults to None. If None, the activation function is the modReLU function, with biases initialized to 0.
             permutation_type (str, optional): permutation type. Allowed values are "random" and "identity". Defaults to "identity".
             use_bias_in (bool): whether to use the bias in the input or not
 
@@ -78,7 +78,9 @@ class UnitaryEvolutionRNNCell(BaseCell):
 
         # self.h0 = jr.uniform(subkeys[5], (hdim,), minval= - np.sqrt(3 / (2 * hdim)), maxval = np.sqrt(3 / (2 * hdim)))
         if nonlinearity is None:
-            self.nonlinearity = ModReLU(jnp.zeros(hdim))  # initialize biases in the ModReLU non-linearity
+            self.nonlinearity = ModReLU(
+                jnp.zeros(hdim)
+            )  # initialize biases in the ModReLU non-linearity
         else:
             self.nonlinearity = nonlinearity
         allowed_permutations = ["random", "identity"]
@@ -147,11 +149,11 @@ class UnitaryEvolutionRNNCell(BaseCell):
 
 
 class FullCapacityUnitaryRNNCell(BaseCell):
-    pass # TODO : fcuRNN
+    pass  # TODO : fcuRNN
+
 
 class EfficientUnitaryRNNCell(BaseCell):
-    pass # TODO: euRNN
-
+    pass  # TODO: euRNN
 
 
 if __name__ == "__main__":

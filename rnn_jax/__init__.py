@@ -3,6 +3,7 @@
 This file intentionally avoids importing heavy submodules at import time.
 It exposes a simple `__version__` and lists the main subpackages.
 """
+
 # ...existing code...
 from typing import TYPE_CHECKING
 

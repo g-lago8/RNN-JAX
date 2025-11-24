@@ -16,4 +16,3 @@ def concat_real_imag(x: Complex[Array, "..."], axis=-1):
     x_real = jnp.real(x)
     x_imag = jnp.imag(x)
     return jnp.concatenate([x_real, x_imag], axis=axis)
-

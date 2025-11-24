@@ -28,8 +28,10 @@ class LongShortTermMemory(BaseCell):
         self.complex_state = False
         self.states_shapes = ((hdim,), (hdim,))
         self.lstm = eqx.nn.LSTMCell(idim, hdim, key=key, **lstm_kwargs)
-        bias_modified = self.lstm.bias.at[2*hdim : 3*hdim].set(1.) # type: ignore
-        self.lstm = eqx.tree_at(lambda tree: tree.bias, self.lstm, bias_modified) # Initialize the forget gate bias to ones (biases are incorporated in one single vector)
+        bias_modified = self.lstm.bias.at[2 * hdim : 3 * hdim].set(1.0)  # type: ignore
+        self.lstm = eqx.tree_at(
+            lambda tree: tree.bias, self.lstm, bias_modified
+        )  # Initialize the forget gate bias to ones (biases are incorporated in one single vector)
 
     def __call__(
         self, x: jax.Array, state: Tuple[Array, ...]
@@ -39,21 +41,31 @@ class LongShortTermMemory(BaseCell):
 
 
 class LongShortTermMemoryCell(BaseCell):
-    w_ih: Array # w input gate
-    w_ii: Array # w input gate
-    b_i : Array # b input gate
-    w_fh: Array # w forget gate
-    w_fi: Array # w forget gate
-    b_f: Array # b forget gate
-    w_oh: Array # w out gate
-    w_oi: Array # w out gate
-    b_o: Array # b forget gate
-    w_ci: Array # w for computing c
-    w_ch: Array # w for computing c
-    b_c : Array # b for computing c
+    w_ih: Array  # w input gate
+    w_ii: Array  # w input gate
+    b_i: Array  # b input gate
+    w_fh: Array  # w forget gate
+    w_fi: Array  # w forget gate
+    b_f: Array  # b forget gate
+    w_oh: Array  # w out gate
+    w_oi: Array  # w out gate
+    b_o: Array  # b forget gate
+    w_ci: Array  # w for computing c
+    w_ch: Array  # w for computing c
+    b_c: Array  # b for computing c
     nonlinearity: Callable
 
-    def __init__(self, idim, hdim, nonlinearity=jax.nn.relu, kernel_init=jax.nn.initializers.glorot_normal(), bias_init=jax.nn.initializers.zeros ,*, key, use_bias=None):
+    def __init__(
+        self,
+        idim,
+        hdim,
+        nonlinearity=jax.nn.relu,
+        kernel_init=jax.nn.initializers.glorot_normal(),
+        bias_init=jax.nn.initializers.zeros,
+        *,
+        key,
+        use_bias=None,
+    ):
         """LSTM cell
 
         Args:
@@ -62,7 +74,7 @@ class LongShortTermMemoryCell(BaseCell):
             key (PRNGKey): pseudo-RNG key
             nonlinearity (Callable, optional): activation function (for gates, sigmoid is used). Defaults to jax.nn.relu.
             kernel_init (jax.nn.Initializer, optional): weights initializer. Defaults to jax.nn.initializers.glorot_normal().
-            bias_init (jax.nn.Initializer, optional): bias initializer. Defaults to jax.nn.initializers.zeros, except for the *forget gate*, where the bias is always initialized to 1. 
+            bias_init (jax.nn.Initializer, optional): bias initializer. Defaults to jax.nn.initializers.zeros, except for the *forget gate*, where the bias is always initialized to 1.
             To change the forget bias initialization (or to have finer-grained control on the initialized weights), one could use `equinox.tree_at` to perform model surgery as in the example below
             ```
             key = jax.random.key(42)
@@ -88,13 +100,12 @@ class LongShortTermMemoryCell(BaseCell):
         self.w_ch = kernel_init(subkeys[3], (hdim, hdim))
         self.w_ii = kernel_init(subkeys[4], (hdim, idim))
         self.w_fi = kernel_init(subkeys[5], (hdim, idim))
-        self.w_oi= kernel_init(subkeys[6], (hdim, idim))
+        self.w_oi = kernel_init(subkeys[6], (hdim, idim))
         self.w_ci = kernel_init(subkeys[7], (hdim, idim))
         self.b_i = bias_init(subkeys[8], (hdim,))
         self.b_c = bias_init(subkeys[9], (hdim,))
         self.b_o = bias_init(subkeys[10], (hdim,))
         self.b_f = jnp.ones((hdim,))
-     
 
     def __call__(self, x, state):
         h, c = state
@@ -105,7 +116,6 @@ class LongShortTermMemoryCell(BaseCell):
         c_new = jax.nn.sigmoid(input_gate * c_int + forget_gate * c)
         h_new = self.nonlinearity(c_new) * output_gate
         return (h_new, c_new), h_new
-
 
 
 class GatedRecurrentUnit(BaseCell):

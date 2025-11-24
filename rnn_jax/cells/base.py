@@ -21,3 +21,8 @@ class BaseCell(eqx.Module, ABC):
         self, x: Inexact[Array, "hdim"], state: Tuple[Array, ...]
     ) -> Tuple[Tuple[Array, ...], Array]:
         pass
+
+    # . TODO: delete attributes states_shapes, complex_state and make something like
+    # @abstractmethod
+    # def init_state(self, *, key, batch_dims=())->Tuple[Array, ...]:
+    #     pass

@@ -10,8 +10,8 @@ import jax.numpy as jnp
 from jaxtyping import Inexact, Array, Complex
 from rnn_jax.cells.base import BaseCell
 from rnn_jax.utils.utils import concat_real_imag
-jax.config.update("jax_debug_nans", 'true')
 
+jax.config.update("jax_debug_nans", "true")
 
 
 class RNNEncoder(eqx.Module):
@@ -32,7 +32,7 @@ class RNNEncoder(eqx.Module):
             self.cell.hdim if not self.cell.complex_state else self.cell.hdim * 2
         )
 
-    def __call__(self, x: Inexact[Array, "seq_len idim"], initial_state = None):
+    def __call__(self, x: Inexact[Array, "seq_len idim"], initial_state=None):
         """Calls the cell on an input sequence x
 
         Args:
@@ -52,15 +52,17 @@ class RNNEncoder(eqx.Module):
         if self.cell.complex_state:
             all_outs = concat_real_imag(all_outs)
         return all_outs
-    
 
-class BidirectionalRNNEncoder(eqx.Module): # FIXME: need two sets of parameters for back and forward!!
+
+class BidirectionalRNNEncoder(
+    eqx.Module
+):  # FIXME: need two sets of parameters for back and forward!!
     cell: BaseCell
     hdim: int
 
     def __init__(self, cell, *, key=None):
         """Bidirectional RNN, implemented using `jax.lax.scan`.
-        This class takes a cell and iterates it through an input sequence, 
+        This class takes a cell and iterates it through an input sequence,
         from first to last and from last to first.
 
         Args:
@@ -72,7 +74,7 @@ class BidirectionalRNNEncoder(eqx.Module): # FIXME: need two sets of parameters 
         self.hdim = (
             self.cell.hdim * 2 if not self.cell.complex_state else self.cell.hdim * 4
         )
-        
+
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
         """Calls the cell on an input sequence x, in both directions
 

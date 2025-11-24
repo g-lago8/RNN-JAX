@@ -12,10 +12,11 @@ class ReservoirComputer(eqx.Module):
     reservoir: RNNEncoder
     hdim: int
     odim: int
-    readout:  eqx.nn.Linear
+    readout: eqx.nn.Linear
+
     def __init__(self, cell, odim, *, key):
-        """A general reservoir computer. 
-        When instanced with Cell = ElmanRNN(), it returns an Echo State Network 
+        """A general reservoir computer.
+        When instanced with Cell = ElmanRNN(), it returns an Echo State Network
 
         Args:
             cell (BaseCell): Cell representing the readout
@@ -41,10 +42,16 @@ class ReservoirComputer(eqx.Module):
             h (Array["seq_len hdim]): reservoir states
         """
         return self.reservoir(x)
-    
-    def fit_readout(self, reservoir:Float[Array, "Nseq Nres"], y:Float[Array, "Nseq"], ridge = 1e-8, train_bias: bool = True) -> "ReservoirComputer":
+
+    def fit_readout(
+        self,
+        reservoir: Float[Array, "Nseq Nres"],
+        y: Float[Array, "Nseq"],
+        ridge=1e-8,
+        train_bias: bool = True,
+    ) -> "ReservoirComputer":
         """Fit the readout using (optional ridge) least-squares and attach it to self.out_layer.weight and optionally bias.
-        
+
         Args:
             reservoir: Array[N, Nres] reservoir states, computed through self.compute_reservoir
             y: Array[N,] (or [N, odim]) output sequence
@@ -70,9 +77,11 @@ class ReservoirComputer(eqx.Module):
             # split into weights and bias
             W_readout = Wcorr[:-1, :].T  # (odim, Nres)
             b_readout = Wcorr[-1, :].reshape(-1)  # (odim,)
+
             # update both weight and bias
             def get_readout_params(rc: ReservoirComputer):
                 return (rc.readout.weight, rc.readout.bias)
+
             return eqx.tree_at(get_readout_params, self, (W_readout, b_readout))
         else:
             # only fit weight, keep existing bias unchanged
@@ -85,8 +94,8 @@ class ReservoirComputer(eqx.Module):
 
             def get_readout_kernel(rc: ReservoirComputer):
                 return rc.readout.weight
-            return eqx.tree_at(get_readout_kernel, self, W_readout)
 
+            return eqx.tree_at(get_readout_kernel, self, W_readout)
 
     def __call__(self, x, last_state=None, batch_size=-1):
         """Call the reservoir computer (Reservoir + Readout)
@@ -100,41 +109,40 @@ class ReservoirComputer(eqx.Module):
             return jax.vmap(self.readout)(reservoir_states)
         else:
             return jax.lax.map(self.reservoir, reservoir_states, batch_size=batch_size)
-        
+
 
 def init_reservoir_esn(
     key,
-    esn:ReservoirComputer, 
-    spectral_radius: float, 
+    esn: ReservoirComputer,
+    spectral_radius: float,
     input_scaling: float,
     bias_scaling: float,
     kernel_init=jr.uniform,
     rec_kernel_init=jr.uniform,
     bias_init=jr.uniform,
-    ):
-    assert isinstance(esn.reservoir.cell, ElmanRNNCell), """This function is meant to be used on Echo State Networks, "
+):
+    assert isinstance(
+        esn.reservoir.cell, ElmanRNNCell
+    ), """This function is meant to be used on Echo State Networks, "
         i.e. reservoir computers with cell of type ElmanRNNCell."""
-    
+
     # get the shapes
 
     w_ih_shape = esn.reservoir.cell.w_ih.shape
     w_hh_shape = esn.reservoir.cell.w_hh.shape
     b_shape = esn.reservoir.cell.b.shape
-    
+
     ikey, hkey, bkey = jr.split(key, 3)
-    
+
     w_ih = kernel_init(ikey, w_ih_shape) * input_scaling
     b = bias_init(bkey, b_shape) * bias_scaling
     w_hh = rec_kernel_init(hkey, w_hh_shape)
     rho_h = jnp.max(jnp.absolute(jnp.linalg.eigvals(w_hh)))
-    w_hh =  w_hh * spectral_radius / rho_h
+    w_hh = w_hh * spectral_radius / rho_h
 
     esn = eqx.tree_at(
-        lambda m: (
-            m.reservoir.cell.w_ih,
-            m.reservoir.cell.b,
-            m.reservoir.cell.w_hh),
+        lambda m: (m.reservoir.cell.w_ih, m.reservoir.cell.b, m.reservoir.cell.w_hh),
         esn,
-        (w_ih, b, w_hh)
+        (w_ih, b, w_hh),
     )
     return esn
