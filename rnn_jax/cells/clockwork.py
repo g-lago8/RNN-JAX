@@ -24,7 +24,6 @@ def block_multiply(block, y):
 def masked_block_triangular_matrix_mult(matrix:Sequence[Sequence[Block]], mask:Array, y:List[Array]):
     y_new = y.copy()
     for i, block in enumerate(matrix):
-        print(mask[i, 0].shape)
         y_new[i] = jax.lax.cond(
             mask[i, 0],
             lambda _ : block_multiply(block, y),
