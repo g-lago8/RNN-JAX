@@ -32,7 +32,7 @@ class RNNEncoder(eqx.Module):
             self.cell.hdim if not self.cell.complex_state else self.cell.hdim * 2
         )
 
-    def __call__(self, x: Inexact[Array, "seq_len idim"]):
+    def __call__(self, x: Inexact[Array, "seq_len idim"], initial_state = None):
         """Calls the cell on an input sequence x
 
         Args:
@@ -43,16 +43,18 @@ class RNNEncoder(eqx.Module):
         """
         scan_fn = lambda state, x_t: self.cell(x_t, state)
         dtype = jnp.complex64 if self.cell.complex_state else jnp.float32
-        initial_state = tuple(
-            jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes
-        )
+        if initial_state is None:
+            # initialize the state to zeros
+            initial_state = tuple(
+                jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes
+            )
         last_state, all_outs = jax.lax.scan(scan_fn, initial_state, x)
         if self.cell.complex_state:
             all_outs = concat_real_imag(all_outs)
         return all_outs
     
 
-class BidirectionalRNNEncoder(eqx.Module):
+class BidirectionalRNNEncoder(eqx.Module): # FIXME: need two sets of parameters for back and forward!!
     cell: BaseCell
     hdim: int
 
