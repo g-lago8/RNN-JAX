@@ -3,7 +3,7 @@ import jax
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
-from cells.base import BaseCell
+from rnn_jax.cells.base import BaseCell
 from typing import Sequence, Callable, Tuple
 from jaxtyping import Array, Float
 

@@ -15,9 +15,9 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 from jaxtyping import Inexact, Array, Complex
-from cells.base import BaseCell
-from utils.utils import concat_real_imag
-from layers.encoder import RNNEncoder, BidirectionalRNNEncoder
+from rnn_jax.cells.base import BaseCell
+from rnn_jax.utils.utils import concat_real_imag
+from rnn_jax.layers.encoder import RNNEncoder, BidirectionalRNNEncoder
 jax.config.update("jax_debug_nans", 'true')
 
 
@@ -140,17 +140,17 @@ class DeepBidirectionalRNN(eqx.Module):
             h, h_reverse = layer(x) 
             all_hidden.append((h, h_reverse))
             x = jnp.concat([h, h_reverse], axis=1)
-            breakpoint()
         return self.out_layer(jnp.concat([all_hidden[-1][0][-1], all_hidden[-1][1][-1]])), all_hidden
 
 
 if __name__ == "__main__":
-    from cells import (
+    from rnn_jax.cells import (
         UnitaryEvolutionRNNCell,
         LongShortTermMemory,
         ElmanRNNCell,
         CoupledOscillatoryRNNCell,
-        LipschitzRNNCell
+        LipschitzRNNCell,
+        ClockWorkRNNCell
     )
 
     key = jr.key(0)
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     
     print(deep_lstm(x))
 
-    print("deep bidirectional LSTM")
+    print("deep bidirectional LSTM") # FIXME: Wrong implementation of bidirectional layer (I need 2 sets of params)
     cells = [
         LongShortTermMemory(idim, hdim, key = key),
         LongShortTermMemory(2*hdim, hdim, key = key), # notice the second - nth should take 2*hdim as input dim
@@ -215,3 +215,11 @@ if __name__ == "__main__":
 
     deep_lstm = DeepBidirectionalRNN(cells, 1, key=key)
     print(deep_lstm(x))
+
+    print("ClockWork RNN")
+
+    cw_rnn_cell = ClockWorkRNNCell(idim, [hdim, hdim-1, hdim+1], periods=[2, 4, 8], nonlinearity=jax.nn.relu, key=key)
+    cw_rnn = RNN(cw_rnn_cell, 1, key=key)
+    out = cw_rnn(x)
+    print(out[-1][-1])
+

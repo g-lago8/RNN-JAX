@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
 from jaxtyping import Inexact
-from cells.base import BaseCell
+from rnn_jax.cells.base import BaseCell
 from typing import Tuple
 from jaxtyping import Array
 

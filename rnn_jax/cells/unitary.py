@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
-from cells.base import BaseCell
+from rnn_jax.cells.base import BaseCell
 from typing import Optional, Sequence, Callable, Tuple
 from jaxtyping import (
     PyTree,
@@ -129,6 +129,21 @@ class UnitaryEvolutionRNNCell(BaseCell):
         h = self._hh_layer(h)
         h = self.nonlinearity(h + x)
         return (h,), h
+
+
+# @jax.custom_jvp
+# def unitary_multiplication(W, x):
+#     """multiplies x by W, where W is a unitary matrix.
+
+#     Args:
+#         W (_type_): _description_
+#         x (_type_): _description_
+#     """
+#     return W @ x
+
+# @unitary_multiplication.defjvp
+# def um_jvp(primals, tangents):
+#     pass
 
 
 class FullCapacityUnitaryRNNCell(BaseCell):
