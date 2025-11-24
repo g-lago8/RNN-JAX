@@ -27,7 +27,7 @@ class RNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, cell: BaseCell, odim, *, key):
+    def __init__(self, cell: BaseCell, odim, *, key, use_bias_out=True):
         """RNN, implemented with `jax.lax.scan`.
 
         This class takes a cell and iterates it through an input sequence, from first to last, 
@@ -43,7 +43,7 @@ class RNN(eqx.Module):
         self.odim = odim
         out_key, key = jr.split(key)
         self.hdim = self.encoder.hdim
-        self.out_layer = eqx.nn.Linear(self.hdim, odim, key=out_key)
+        self.out_layer = eqx.nn.Linear(self.hdim, odim, key=out_key, use_bias=use_bias_out)
 
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
         """Calls the encoder on an input sequence x and 
@@ -63,7 +63,7 @@ class BidirectionalRNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, cell, odim, *, key):
+    def __init__(self, cell, odim, *, key, use_bias_out=True):
         """Bidirectional RNN, implemented using `jax.lax.scan`. This class takes a cell and iterates it through an input sequence, from first to last and from last to first.
 
         Args:
@@ -75,7 +75,7 @@ class BidirectionalRNN(eqx.Module):
         self.odim = odim
         out_key, key = jr.split(key)
         self.hdim = self.encoder.hdim
-        self.out_layer = eqx.nn.Linear(self.hdim, odim, key=out_key)
+        self.out_layer = eqx.nn.Linear(self.hdim, odim, key=out_key, use_bias=use_bias_out)
 
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
         """Calls the cell on an input sequence x, in both directions,
@@ -101,14 +101,14 @@ class DeepRNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, layers: Sequence[BaseCell], odim, *, key):
+    def __init__(self, layers: Sequence[BaseCell], odim, *, key, use_bias_out=True):
         assert len(layers) >= 1, "layers must be a non-empty sequence of Encoder objects, got an empty sequence"
         self.layers = [RNNEncoder(cell) for cell in layers]
         self.odim = odim
         self.n_layers = len(self.layers)
         out_key, key = jr.split(key)
         self.hdim = [l.hdim for l in layers]
-        self.out_layer = eqx.nn.Linear(self.hdim[-1], self.odim, key=out_key)
+        self.out_layer = eqx.nn.Linear(self.hdim[-1], self.odim, key=out_key, use_bias=use_bias_out)
 
     def __call__(self, x, *, key=None):
         all_hidden = []
@@ -125,14 +125,14 @@ class DeepBidirectionalRNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, layers: Sequence[BaseCell], odim, *, key):
+    def __init__(self, layers: Sequence[BaseCell], odim, *, key, use_bias_out=True):
         assert len(layers) >= 1, "layers must be a non-empty sequence of Encoder objects, got an empty sequence"
         self.layers = [BidirectionalRNNEncoder(cell) for cell in layers]
         self.odim = odim
         self.n_layers = len(self.layers)
         out_key, key = jr.split(key)
         self.hdim = [l.hdim for l in layers]
-        self.out_layer = eqx.nn.Linear(self.hdim[-1] * 2, self.odim, key=out_key)
+        self.out_layer = eqx.nn.Linear(self.hdim[-1] * 2, self.odim, key=out_key, use_bias=use_bias_out)
 
     def __call__(self, x, *, key=None):
         all_hidden = []
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     
     print(deep_lstm(x))
 
-    print("deep bidirectional LSTM") # FIXME: Wrong implementation of bidirectional layer (I need 2 sets of params)
+    print("deep bidirectional LSTM") 
     cells = [
         LongShortTermMemory(idim, hdim, key = key),
         LongShortTermMemory(2*hdim, hdim, key = key), # notice the second - nth should take 2*hdim as input dim
