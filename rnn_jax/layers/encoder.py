@@ -57,10 +57,11 @@ class RNNEncoder(eqx.Module):
 class BidirectionalRNNEncoder(
     eqx.Module
 ):  # FIXME: need two sets of parameters for back and forward!!
-    cell: BaseCell
+    forward_cell: BaseCell
+    backward_cell: BaseCell
     hdim: int
 
-    def __init__(self, cell, *, key=None):
+    def __init__(self, forward_cell, backward_cell, *, key=None):
         """Bidirectional RNN, implemented using `jax.lax.scan`.
         This class takes a cell and iterates it through an input sequence,
         from first to last and from last to first.
@@ -70,9 +71,10 @@ class BidirectionalRNNEncoder(
             odim (int): output dimension
             key (PRNGKeyArray): random key
         """
-        self.cell = cell
+        self.forward_cell_cell = forward_cell
+        self.backward_cell = backward_cell
         self.hdim = (
-            self.cell.hdim * 2 if not self.cell.complex_state else self.cell.hdim * 4
+            self.forward_cell.hdim * 2 if not self.forward_cell.complex_state else self.forward_cell.hdim * 4
         )
 
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
@@ -86,14 +88,15 @@ class BidirectionalRNNEncoder(
             to a concatenation of the two states obtained iterating the network
             from first to last and form last to first
         """
-        scan_fn = lambda state, x_t: self.cell(x_t, state)
-        dtype = jnp.complex64 if self.cell.complex_state else jnp.float32
+        scan_fn_forward = lambda state, x_t: self.forward_cell(x_t, state)
+        scan_fn_backward = lambda state, x_t: self.backward_cell(x_t, state)
+        dtype = jnp.complex64 if self.forward_cell.complex_state else jnp.float32
         initial_state = tuple(
-            jnp.zeros(s, dtype=dtype) for s in self.cell.states_shapes
+            jnp.zeros(s, dtype=dtype) for s in self.forward_cell.states_shapes
         )
-        last_state, outs = jax.lax.scan(scan_fn, initial_state, x)
-        last_state_reverse, outs_reverse = jax.lax.scan(scan_fn, initial_state, x[::-1])
-        if self.cell.complex_state:
+        last_state, outs = jax.lax.scan(scan_fn_forward, initial_state, x)
+        last_state_reverse, outs_reverse = jax.lax.scan(scan_fn_backward, initial_state, x[::-1])
+        if self.forward_cell.complex_state:
             outs = concat_real_imag(outs)
             outs_reverse = concat_real_imag(outs_reverse)
         return outs, outs_reverse
