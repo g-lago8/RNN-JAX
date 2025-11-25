@@ -56,7 +56,7 @@ class RNNEncoder(eqx.Module):
 
 class BidirectionalRNNEncoder(
     eqx.Module
-):  # FIXME: need two sets of parameters for back and forward!!
+): 
     forward_cell: BaseCell
     backward_cell: BaseCell
     hdim: int
