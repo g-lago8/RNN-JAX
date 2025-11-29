@@ -59,21 +59,13 @@ outs = eqx.filter_vmap(rnn)(x)
 # TODOs:
 
 - Add more cells:
-  - [?] non normal RNN https://arxiv.org/abs/1905.12080 implementing this model opens a whole subsection of nets trained on riemannian manifolds
-  - [x] clockwork RNN https://arxiv.org/abs/1402.3511
-  - [x] lipschitz RNN https://arxiv.org/abs/2006.12070
-  - [x] anti-symmetric RNN https://arxiv.org/abs/1902.09689
+- More examples, benchmarks, use cases
+-  (maybe)Advanced Models such as:
 
-- [x] Bidirectional layer
-- [x] Deep architectures (bidirectional or not)
-- [ ] Examples and benchmarks
-  - [x] Adding task
-  - [ ] Copy task
-  - [x] Dynamical system forecasting with Echo State Networks
-  - [ ] Pixel-by-pixel image classification
-  - [x] Char-level language modeling 
-  - [ ] A comparisono between architectures on some task
-- [ ] Advanced Models
-  - Linear recurrence models (SSM and LRU)
-  - Neural ODEs
-  - Transformer / RNN hybrids
+  - Linear recurrence models under the same API
+    - S4
+    - S5
+    - LRU
+
+  - (Controlled) Neural ODEs
+  - Transformer / RNN hybrids e.g. a prototype of RWKV
