@@ -59,6 +59,8 @@ class UnitaryEvolutionRNNCell(BaseCell):
             permutation_type (str, optional): permutation type. Allowed values are "random" and "identity". Defaults to "identity".
             use_bias_in (bool): whether to use the bias in the input or not
 
+        Kwargs:
+            key (Array): RNG key
         """
         super().__init__(idim, hdim)
         self.states_shapes = (hdim,)
@@ -124,7 +126,7 @@ class UnitaryEvolutionRNNCell(BaseCell):
 
         Args:
             x (Inexact[Array, &#39;idim&#39;]): input vector
-            carry (_type_): state of the system (i.e. h in this case)
+            state (Tuple[Array]): state of the system (i.e. (h,) in this case)
         """
         (h,) = state  # carry for this cell is only the hidden state!
         x = self.in_layer(x)

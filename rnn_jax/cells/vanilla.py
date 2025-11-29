@@ -49,7 +49,7 @@ class ElmanRNNCell(BaseCell):
 
     def __call__(
         self, x: Array, state: Tuple[Array, ...]
-    ) -> Tuple[Tuple[Array, ...], Array]:
+    ) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh @ h + self.w_ih @ x + self.b)
         return (new_h,), new_h
@@ -92,7 +92,7 @@ class IndRNNCell(BaseCell):
         self.b = bias_init(bkey, hdim)
         self.nonlinearity = nonlinearity
 
-    def __call__(self, x: Array, state: Tuple[Array]):
+    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh * h + self.w_ih @ x + self.b)
         return (new_h,), new_h

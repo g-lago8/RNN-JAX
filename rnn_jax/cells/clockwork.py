@@ -6,6 +6,7 @@ import jax.random as jr
 import equinox as eqx
 from jaxtyping import Inexact
 from rnn_jax.cells.base import BaseCell
+from jax.nn.initializers import Initializer
 from typing import Tuple
 from jaxtyping import Array
 
@@ -49,16 +50,30 @@ class ClockWorkRNNCell(BaseCell):
 
     def __init__(
         self,
-        idim,
+        idim: int,
         block_sizes: int | Sequence[int],
         periods: Sequence[int],
         nonlinearity: Callable,
-        kernel_init=jax.nn.initializers.glorot_normal(),
-        recurrent_kernel_init=jax.nn.initializers.orthogonal(),
-        bias_init=jax.nn.initializers.zeros,
+        kernel_init: Initializer = jax.nn.initializers.glorot_normal(),
+        recurrent_kernel_init: Initializer = jax.nn.initializers.orthogonal(),
+        bias_init: Initializer = jax.nn.initializers.zeros,
         *,
-        key,
+        key: Array,
     ):
+        """Initialize the clockwork RNN
+
+        Args:
+            idim (int): Input dimension
+            block_sizes (int | Sequence[int]): block sizes (if int, all blocks have the same size)
+            periods (Sequence[int]): periods of the blocks
+            nonlinearity (Callable): activation function
+            kernel_init (Initializer, optional): input weights initializer. Defaults to jax.nn.initializers.glorot_normal().
+            recurrent_kernel_init (Initializer, optional): recurrent weights initializer. Defaults to jax.nn.initializers.orthogonal().
+            bias_init (Initializer, optional): bias initializer. Defaults to jax.nn.initializers.zeros.
+
+        Kwargs:
+            key (Array): JAX PRNG key for initialization
+        """
         self.idim = idim
         self.complex_state = False
         assert isinstance(periods, abc.Sequence) and len(periods) > 0, (
@@ -80,10 +95,15 @@ class ClockWorkRNNCell(BaseCell):
         self.nonlinearity = nonlinearity
 
     def _init_w_h(self, ns, initializer, key):
-        """
-        ns: list of block sizes [n1, ..., nk]
-        initializer: function (key, shape) -> array
-        key: anything you want passed to the initializer (e.g., PRNGKey in JAX)
+        """Initialize the block upper-triangular recurrent weights
+
+        Args:
+            ns: list of block sizes [n1, ..., nk]
+            initializer: function (key, shape) -> array
+            key: anything you want passed to the initializer (e.g., PRNGKey in JAX)
+
+        Returns:
+            List[List[Block]]: block upper-triangular matrix
         """
         k = len(ns)
         blocks = []
@@ -101,6 +121,17 @@ class ClockWorkRNNCell(BaseCell):
         return blocks
 
     def _init_w_i(self, idim, ns, initializer, key):
+        """initialize the input weights
+
+        Args:
+            idim (int): input dimension
+            ns (Sequence[int]): number of units per block
+            initializer (Initializer): initializer function for each block
+            key (Array): JAX PRNG key
+
+        Returns:
+            List[Array]: list of input weight blocks
+        """
         k = len(ns)
         blocks = []
         for i in range(k):
@@ -119,6 +150,15 @@ class ClockWorkRNNCell(BaseCell):
     def __call__(
         self, x: Array, state: Tuple[Array, ...]
     ) -> Tuple[Tuple[Array, ...], Array]:
+        """Call the clockwork RNN
+
+        Args:
+            x (Array): Input array
+            state (Tuple[Array, ...]): Hidden state, an array for each block
+
+        Returns:
+            new_state, h: (Tuple[Tuple[Array, ...], Array]): New state as a tuple and as concatenated array
+        """
         *h, t = state
         mask = jax.vmap(lambda T, t: t % T == 0, in_axes=(0, None))(
             self.periods, t

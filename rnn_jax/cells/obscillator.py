@@ -30,6 +30,18 @@ class CoupledOscillatoryRNNCell(BaseCell):
         *,
         key,
     ):
+        """Initialize the coRNN
+
+        Args:
+            idim (int): Input dimension
+            hdim (int): Hidden dimension
+            gamma (float or (float, float)): Stiffness factor. If `heterogeneous` is True, provide a tuple (gamma_min, gamma_max)
+            eps (float or (float, float)): Damping factor. If `heterogeneous` is True, provide a tuple (eps_min, eps_max)
+            dt (float): Discretization step size
+            key (Array): JAX PRNG key for initialization
+            nonlinearity (Callable, optional): Non-linear activation function. Defaults to jax.nn.relu.
+            heterogeneous (bool, optional): Whether to use heterogenous obscillators. Defaults to False.
+        """
         super().__init__(idim, hdim)
         self.states_shapes = ((hdim,), (hdim,))
         self.complex_state = False

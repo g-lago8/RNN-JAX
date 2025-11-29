@@ -37,6 +37,20 @@ class LipschitzRNNCell(BaseCell):
         *,
         key,
     ):
+        """Initialize the Lipschitz RNN cell
+
+        Args:
+            idim (int): Input dimension
+            hdim (int): Hidden dimension
+            beta_a (float): Proportion of antisymmetric part in A
+            gamma_a (float): Diagonal stabilization term for A
+            gamma_w (float): Diagonal stabilization term for W
+            dt (float): Step size for the discretization
+            weight_std (float): Standard deviation for weight initialization
+            key (PRNGKey): JAX PRNG key for initialization
+            discretization (str, optional): Dicretization type, the accepted values are 'euler' and 'rk2'. Defaults to "euler".
+            nonlinearity (Callable, optional): Nonlinear activation function. Defaults to jax.nn.tanh.
+        """
         super().__init__(idim, hdim)
         self.complex_state = False
         self.states_shapes = ((hdim,), (hdim,))
@@ -61,10 +75,8 @@ class LipschitzRNNCell(BaseCell):
         Returns:
             Array: A = (1-beta_a) (M_a + M_a^T) + beta_a (M_a - M_a^T)
         """
-        return (
-            1
-            - self.beta_a * (self.M_a + self.M_a.T)
-            + self.beta_a * (self.M_a - self.M_a.T)
+        return (1 - self.beta_a) * (self.M_a + self.M_a.T) + self.beta_a * (
+            self.M_a - self.M_a.T
         )
 
     def _W(self):
@@ -75,10 +87,8 @@ class LipschitzRNNCell(BaseCell):
         Returns:
             Array: W = (1-beta_w) (M_w + M_w^T) + beta_a (M_w - M_w^T)
         """
-        return (
-            1
-            - self.beta_w * (self.M_w + self.M_w.T)
-            + self.beta_w * (self.M_w - self.M_w.T)
+        return (1 - self.beta_w) * (self.M_w + self.M_w.T) + self.beta_w * (
+            self.M_w - self.M_w.T
         )
 
     def _update_euler(self, x, h, z, W, A):
@@ -105,8 +115,9 @@ class LipschitzRNNCell(BaseCell):
         else:
             raise ValueError("unrecognized discretization method")
 
-    def __call__(self, x: Array, state: Tuple[Array, Array]):
-        # jax.debug.breakpoint()
+    def __call__(
+        self, x: Array, state: Tuple[Array, Array]
+    ) -> Tuple[Tuple[Array, Array], Array]:
         h, z = state
         W = self._W()
         A = self._A()

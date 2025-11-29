@@ -54,9 +54,7 @@ class RNNEncoder(eqx.Module):
         return all_outs
 
 
-class BidirectionalRNNEncoder(
-    eqx.Module
-): 
+class BidirectionalRNNEncoder(eqx.Module):
     forward_cell: BaseCell
     backward_cell: BaseCell
     hdim: int
@@ -74,7 +72,9 @@ class BidirectionalRNNEncoder(
         self.forward_cell_cell = forward_cell
         self.backward_cell = backward_cell
         self.hdim = (
-            self.forward_cell.hdim * 2 if not self.forward_cell.complex_state else self.forward_cell.hdim * 4
+            self.forward_cell.hdim * 2
+            if not self.forward_cell.complex_state
+            else self.forward_cell.hdim * 4
         )
 
     def __call__(self, x: Inexact[Array, "seq_len idim"]):
@@ -95,7 +95,9 @@ class BidirectionalRNNEncoder(
             jnp.zeros(s, dtype=dtype) for s in self.forward_cell.states_shapes
         )
         last_state, outs = jax.lax.scan(scan_fn_forward, initial_state, x)
-        last_state_reverse, outs_reverse = jax.lax.scan(scan_fn_backward, initial_state, x[::-1])
+        last_state_reverse, outs_reverse = jax.lax.scan(
+            scan_fn_backward, initial_state, x[::-1]
+        )
         if self.forward_cell.complex_state:
             outs = concat_real_imag(outs)
             outs_reverse = concat_real_imag(outs_reverse)

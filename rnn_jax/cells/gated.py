@@ -13,33 +13,6 @@ from jaxtyping import Array
 #  not seem to have particular optimization tricks anyway.
 
 
-class LongShortTermMemory(BaseCell):
-    lstm: eqx.nn.LSTMCell
-
-    def __init__(self, idim: int, hdim: int, *, key, **lstm_kwargs):
-        """Wrapper for `equinox.nn.LSTMCell`
-
-        Args:
-            idim (int): input dimension
-            hdim (int): hidden dimension
-            key (PRNGKey): pseudo-RNG key
-        """
-        super().__init__(idim, hdim)
-        self.complex_state = False
-        self.states_shapes = ((hdim,), (hdim,))
-        self.lstm = eqx.nn.LSTMCell(idim, hdim, key=key, **lstm_kwargs)
-        bias_modified = self.lstm.bias.at[2 * hdim : 3 * hdim].set(1.0)  # type: ignore
-        self.lstm = eqx.tree_at(
-            lambda tree: tree.bias, self.lstm, bias_modified
-        )  # Initialize the forget gate bias to ones (biases are incorporated in one single vector)
-
-    def __call__(
-        self, x: jax.Array, state: Tuple[Array, ...]
-    ) -> Tuple[Tuple[Array, Array], Array]:
-        h, c = self.lstm(x, state)
-        return (h, c), h
-
-
 class LongShortTermMemoryCell(BaseCell):
     w_ih: Array  # w input gate
     w_ii: Array  # w input gate
@@ -107,7 +80,18 @@ class LongShortTermMemoryCell(BaseCell):
         self.b_o = bias_init(subkeys[10], (hdim,))
         self.b_f = jnp.ones((hdim,))
 
-    def __call__(self, x, state):
+    def __call__(
+        self, x: Array, state: Tuple[Array, Array]
+    ) -> Tuple[Tuple[Array, Array], Array]:
+        """Call the LSTM cell
+
+        Args:
+            x (Array): Input array
+            state (Tuple[Array, Array]): Cell state and hidden state of the LSTM
+
+        Returns:
+            (c, h), h (Tuple[Array, Array], Array): Tuple of new cell state and hidden state, and the new hidden state
+        """
         h, c = state
         input_gate = jax.nn.sigmoid(self.w_ii @ x + self.w_ih @ h + self.b_i)
         forget_gate = jax.nn.sigmoid(self.w_fi @ x + self.w_fh @ h + self.b_f)
@@ -116,6 +100,36 @@ class LongShortTermMemoryCell(BaseCell):
         c_new = jax.nn.sigmoid(input_gate * c_int + forget_gate * c)
         h_new = self.nonlinearity(c_new) * output_gate
         return (h_new, c_new), h_new
+
+
+# =======================  wrappers from equinox.nn =======================
+
+
+class LongShortTermMemory(BaseCell):
+    lstm: eqx.nn.LSTMCell
+
+    def __init__(self, idim: int, hdim: int, *, key, **lstm_kwargs):
+        """Wrapper for `equinox.nn.LSTMCell`
+
+        Args:
+            idim (int): input dimension
+            hdim (int): hidden dimension
+            key (PRNGKey): pseudo-RNG key
+        """
+        super().__init__(idim, hdim)
+        self.complex_state = False
+        self.states_shapes = ((hdim,), (hdim,))
+        self.lstm = eqx.nn.LSTMCell(idim, hdim, key=key, **lstm_kwargs)
+        bias_modified = self.lstm.bias.at[2 * hdim : 3 * hdim].set(1.0)  # type: ignore
+        self.lstm = eqx.tree_at(
+            lambda tree: tree.bias, self.lstm, bias_modified
+        )  # Initialize the forget gate bias to ones (biases are incorporated in one single vector)
+
+    def __call__(
+        self, x: jax.Array, state: Tuple[Array, ...]
+    ) -> Tuple[Tuple[Array, Array], Array]:
+        h, c = self.lstm(x, state)
+        return (h, c), h
 
 
 class GatedRecurrentUnit(BaseCell):
