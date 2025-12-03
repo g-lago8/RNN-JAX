@@ -1,5 +1,4 @@
 import jax
-from abc import ABC, abstractmethod
 from jax import random as jr
 from jax import nn
 import numpy as np
