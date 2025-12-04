@@ -5,7 +5,7 @@ import numpy as np
 from jax import numpy as jnp
 import equinox as eqx
 from jax.lax import associative_scan
-from typing import TypeVar, Tuple
+from typing import TypeVar, Tuple, Callable
 from jaxtyping import Inexact, Array
 from rnn_jax.ssm.base import BaseSSMLayer
 import einops
@@ -18,6 +18,7 @@ class LinearRecurrentUnit(BaseSSMLayer):
     W_out: Inexact[Array, "model_dim state_dim"]
     W_skip: Inexact[Array, "model_dim in_dim"]
     gamma_log: Inexact[Array, "state_dim"]
+    nonlinearity: Callable
 
     def __init__(
         self,
@@ -28,6 +29,7 @@ class LinearRecurrentUnit(BaseSSMLayer):
         rho_max=0.99,
         theta_min=0,
         theta_max=2 * np.pi,
+        nonlinearity=jax.nn.gelu,
         *,
         key,
     ):
@@ -62,6 +64,7 @@ class LinearRecurrentUnit(BaseSSMLayer):
         # init gamma_log to
         diag_lambda = jnp.exp(-jnp.exp(self.nu_log) + 1j * jnp.exp(self.theta_log))
         self.gamma_log = jnp.log(jnp.sqrt(1 - jnp.abs(diag_lambda) ** 2))
+        self.nonlinearity = nonlinearity
 
     def _init_W_hh(self, rho_min, rho_max, theta_min, theta_max, key):
         key1, key2 = jr.split(key)
@@ -97,7 +100,7 @@ class LinearRecurrentUnit(BaseSSMLayer):
         )
         return jax.vmap(lambda x: scaled_W_in @ x)(xs)
 
-    def preprocess_matrix(self, seq_len):
+    def discretize(self, seq_len):
         lambda_matrix = jnp.exp(-jnp.exp(self.nu_log) + 1j * jnp.exp(self.theta_log))
         return einops.repeat(
             lambda_matrix, "state_dim -> seq_len state_dim", seq_len=seq_len
@@ -111,30 +114,13 @@ class LinearRecurrentUnit(BaseSSMLayer):
         return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
 
     def postprocess_outputs(self, xs, hs):
-        return (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
+        zs = (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
+        return self.nonlinearity(zs)
 
     def __call__(self, xs, h0=None):
         seq_len = xs.shape[0]
-        lambda_elements = self.preprocess_matrix(seq_len)
+        lambda_elements = self.discretize(seq_len)
         w_in_xs = self.preprocess_inputs(xs)
         scan_elements = (lambda_elements, w_in_xs)
         lambda_powers, hs = associative_scan(self.ssm_cell, scan_elements)
         return self.postprocess_outputs(xs, hs)
-
-
-def main():
-
-    xs = jr.uniform(jr.key(0), (1000, 1))
-    key = jr.key(1)
-    model = LinearRecurrentUnit(1, 16, 32, key=key)
-    jit_model = eqx.filter_jit(model)
-    ys = model(xs)
-    ys_prime = jit_model(xs)
-    assert jnp.allclose(ys, ys_prime, atol=1e-4)
-    print(ys[-1])
-    print(ys_prime[-1])
-    print("Check passed with rtol 1e-4")
-
-
-if __name__ == "__main__":
-    main()

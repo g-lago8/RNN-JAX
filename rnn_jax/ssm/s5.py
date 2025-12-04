@@ -5,7 +5,7 @@ import numpy as np
 from jax import numpy as jnp
 import equinox as eqx
 from jax.lax import associative_scan
-from typing import TypeVar, Tuple
+from typing import TypeVar, Tuple, Callable
 from jaxtyping import Inexact, Array, Complex, Real
 from rnn_jax.ssm.base import BaseSSMLayer
 import einops
@@ -55,9 +55,8 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
     W_in: Complex[Array, "state_dim in_dim"]
     W_out: Complex[Array, "model_dim state_dim"]
     W_skip: Real[Array, "model_dim in_dim"]
-    #Lambda_complex: Complex[Array, "state_dim_c"]
-    #Lambda_real: Complex[Array, "state_dim_r"]
     Lambda: Array
+    nonlinearity: Callable
     
     def __init__(
         self,
@@ -68,6 +67,7 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
         blocks_lambda = 1,
         delta_min=0.001,
         delta_max=0.1,
+        nonlinearity=jax.nn.gelu,
         *,
         key,
     ):
@@ -76,7 +76,7 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
         
         # init timescale
         self.Delta = jr.uniform(delta_key, minval=delta_min, maxval=delta_max)
-        self.Lambda, V = self.init_lambda(blocks_lambda, init_w_h)
+        self.Lambda, V = self._init_Lambda(blocks_lambda, init_w_h)
         # init input matrix
         B = jr.normal(in_key, (self.state_dim, self.in_dim))
         self.W_in = V.T @ B
@@ -85,8 +85,9 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
         self.W_out = C @ V
         # init skip matrix
         self.W_skip = jr.normal(skip_key, (self.model_dim, self.in_dim))
+        self.nonlinearity = nonlinearity
 
-    def init_lambda(self, n_blocks, init_type):
+    def _init_Lambda(self, n_blocks, init_type):
         if self.state_dim % n_blocks != 0:
             raise ValueError("state_dim must be divisible by n_blocks")
         if init_type == 'leg-n':
@@ -100,18 +101,7 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
     def preprocess_inputs(self, xs: Array, B_bar: Array):
         return jax.vmap(lambda x: B_bar @ x)(xs)
         
-    
-    def postprocess_outputs(self, xs, hs):
-        return (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
-
-    def ssm_cell(
-        self, a: Tuple[Array, Array], b: Tuple[Array, Array]
-    ) -> Tuple[Array, Array]:
-        matrix_pow_i, bx_i = a
-        matrix_pow_j, bx_j = b
-        return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
-    
-    def preprocess_matrix(self, seq_len):
+    def discretize(self, seq_len):
         Lambda_bar = jnp.exp(self.Lambda * self.Delta)
         zoh_in_scaling = (1 / self.Lambda * (Lambda_bar - 1))
         W_in_bar = einops.einsum(self.W_in, zoh_in_scaling, "state_dim in_dim, state_dim -> state_dim in_dim")
@@ -119,32 +109,21 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
             Lambda_bar, "state_dim -> seq_len state_dim", seq_len=seq_len
         ), W_in_bar
     
+    def ssm_cell(
+        self, a: Tuple[Array, Array], b: Tuple[Array, Array]
+    ) -> Tuple[Array, Array]:
+        matrix_pow_i, bx_i = a
+        matrix_pow_j, bx_j = b
+        return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
+    
+    def postprocess_outputs(self, xs, hs):
+        zs = (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
+        return self.nonlinearity(zs)
+
     def __call__(self, xs):
         seq_len = xs.shape[0]
-        lambda_elements, B_bar = self.preprocess_matrix(seq_len)
+        lambda_elements, B_bar = self.discretize(seq_len)
         w_in_xs = self.preprocess_inputs(xs, B_bar)
         scan_elements = (lambda_elements, w_in_xs)
         lambda_powers, hs = associative_scan(self.ssm_cell, scan_elements)
         return self.postprocess_outputs(xs, hs)
-
-
-def main():
-
-    xs = jr.uniform(jr.key(0), (1000, 1))
-    key = jr.key(1)
-    model = SimplifiedStateSpaceLayer(1, 16, 32, key=key)
-    jit_model = eqx.filter_jit(model)
-    ys = model(xs)
-    ys_prime = jit_model(xs)
-    assert jnp.allclose(ys, ys_prime, atol=1e-4)
-    print(ys[-1])
-    print(ys_prime[-1])
-    print("Check passed with rtol 1e-4")
-
-    print(ys.shape)
-
-
-if __name__ == "__main__":
-    main()
-
-
