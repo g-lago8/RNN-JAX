@@ -35,10 +35,10 @@ class BaseSSMLayer(eqx.Module, ABC):
 
     @abstractmethod
     def preprocess_inputs(self, xs: Inexact[Array, " seq_len model_dim"]):
-        return xs
+        pass
 
     @abstractmethod
-    def preprocess_matrix(self, *args):
+    def discretize(self, *args)->Tuple[Array, ...]:
         pass
 
     @abstractmethod
@@ -56,5 +56,5 @@ class BaseSSMLayer(eqx.Module, ABC):
         pass
 
     @abstractmethod
-    def __call__(self, xs, h0=None):
+    def __call__(self, xs, h0=None)->Array:
         pass
