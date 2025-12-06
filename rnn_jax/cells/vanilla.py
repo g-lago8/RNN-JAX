@@ -55,6 +55,52 @@ class ElmanRNNCell(BaseCell):
         return (new_h,), new_h
 
 
+class LeakyElmanCell(ElmanRNNCell):
+    leak_rate: float
+
+    def __init__(
+        self,
+        idim,
+        hdim,
+        kernel_init=jax.nn.initializers.glorot_normal(),
+        recurrent_kernel_init=jax.nn.initializers.orthogonal(),
+        bias_init=jax.nn.initializers.zeros,
+        nonlinearity=jax.nn.relu,
+        leak_rate=1,
+        *,
+        key,
+    ):
+        """Leaky ELman cell. Withe respect to a normal Elman Cell, it adds a leak term alpha in [0, 1], and its update is  
+            h_t = alpha * Elman(h_{t-1}, x_t) + (1-alpha) * h_{t-1}
+
+        Args:
+            idim (_type_): _description_
+            hdim (_type_): _description_
+            key (_type_): _description_
+            kernel_init (_type_, optional): _description_. Defaults to jax.nn.initializers.glorot_normal().
+            recurrent_kernel_init (_type_, optional): _description_. Defaults to jax.nn.initializers.orthogonal().
+            bias_init (_type_, optional): _description_. Defaults to jax.nn.initializers.zeros.
+            nonlinearity (_type_, optional): _description_. Defaults to jax.nn.relu.
+            leak_rate (int, optional): _description_. Defaults to 1.
+        """
+        super().__init__(
+            idim,
+            hdim,
+            kernel_init=kernel_init,
+            recurrent_kernel_init=recurrent_kernel_init,
+            bias_init=bias_init,
+            nonlinearity=nonlinearity,
+            key=key,
+        )
+        self.leak_rate = leak_rate
+
+    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+        (h,) = state
+        new_h = self.nonlinearity(self.w_hh @ h + self.w_ih @ x + self.b)
+        new_h = self.leak_rate * new_h + (1 - self.leak_rate) * h
+        return (new_h,), new_h
+
+
 class IndRNNCell(BaseCell):
     w_hh: Inexact[Array, "hdim"]
     w_ih: Inexact[Array, "hdim idim"]
