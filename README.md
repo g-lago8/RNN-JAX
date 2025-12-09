@@ -52,9 +52,9 @@ outs = eqx.filter_vmap(rnn)(x)
     - ClockWorkRNNCell: Clockwork RNN, an architecture that processes inputs at different time scales (Koutník et al. [A Clockwork RNN](https://arxiv.org/abs/1402.3511), 2014)
     - LipschitzRNNCell: Lipschitz RNN, an architecture grounded in continuous time dymamical systems (Erichson et al. [Lipschitz Recurrent Neural Networks](https://arxiv.org/abs/2006.12070), 2020)
     - UnitaryEvolutionRNNCell: a flavor of Unitary RNN, that parametrizes the recurrence matrix to be unitary through Fourier transforms and Householder reflectors (Arjovsky et al. [Unitary Evolution Recurrent Neural Networks](https://arxiv.org/abs/1511.06464), 2016)
-    - CoupledOscillatoryRNNCell: an RNN baased on oscillator dynamical systems ((Rusch and Mishra, [Coupled Oscillatory Recurrent Neural Network (coRNN)](https://arxiv.org/abs/2010.00951), 2023)), and its heterogenous variant (Ceni et al. [Random Oscillators Network for Time Series Processing](https://proceedings.mlr.press/v238/ceni24a/ceni24a.pdf), 2024)
+    - CoupledOscillatoryRNNCell: an RNN baased on oscillator dynamical systems (Rusch and Mishra, [Coupled Oscillatory Recurrent Neural Network (coRNN)](https://arxiv.org/abs/2010.00951), 2023), and its heterogenous variant (Ceni et al. [Random Oscillators Network for Time Series Processing](https://proceedings.mlr.press/v238/ceni24a/ceni24a.pdf), 2024)
 
 ## State Space Models (SSM)
 State space models are a class of recurrent network that use linear recurrence to perform forward and backward pass through time. In JAX this can be implemented efficiently using `jax.lax.associative_scan`.
-- **S5**: simplified SSM. An SSM that uses a diagonal recurrence matrix. (Smith et al. [Simplified State Space Layers for Sequence Modeling](https://arxiv.org/abs/2208.04933).
-- **Linear Recurrent Unit**: A model that adapts concepts to RNNs, employing linear recurrence and diagonal transiton matrix (Orvieto et al. [Resurrecting Recurrent Neural Networks for Long Sequences](https://arxiv.org/abs/2303.06349)).
+- **S5**: simplified SSM. An SSM that uses a diagonal recurrence matrix. (Smith et al. [Simplified State Space Layers for Sequence Modeling](https://arxiv.org/abs/2208.04933), 2022).
+- **Linear Recurrent Unit**: A model that adapts concepts to RNNs, employing linear recurrence and diagonal transiton matrix (Orvieto et al. [Resurrecting Recurrent Neural Networks for Long Sequences](https://arxiv.org/abs/2303.06349), 2023).
