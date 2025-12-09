@@ -48,24 +48,13 @@ outs = eqx.filter_vmap(rnn)(x)
     - AntiSymmetricRNNCell: Antisymmetric RNN, where the update is described by $h_{t+1} = h_t + \sigma((W_{h} -W_{h}^T) h_t + W_{x}x_{t+1} + b)$ (Chang et al. [AntisymmetricRNN: A Dynamical System View on Recurrent Neural Networks](https://arxiv.org/abs/1902.09689), 2019)
     - GatedAntiSymmetricRNNCell: gated version of the antisymmetric RNN (same reference as above)
 
-- **Other Models**
+- **Other Recurrent Models**
     - ClockWorkRNNCell: Clockwork RNN, an architecture that processes inputs at different time scales (Koutník et al. [A Clockwork RNN](https://arxiv.org/abs/1402.3511), 2014)
     - LipschitzRNNCell: Lipschitz RNN, an architecture grounded in continuous time dymamical systems (Erichson et al. [Lipschitz Recurrent Neural Networks](https://arxiv.org/abs/2006.12070), 2020)
     - UnitaryEvolutionRNNCell: a flavor of Unitary RNN, that parametrizes the recurrence matrix to be unitary through Fourier transforms and Householder reflectors (Arjovsky et al. [Unitary Evolution Recurrent Neural Networks](https://arxiv.org/abs/1511.06464), 2016)
     - CoupledOscillatoryRNNCell: an RNN baased on oscillator dynamical systems ((Rusch and Mishra, [Coupled Oscillatory Recurrent Neural Network (coRNN)](https://arxiv.org/abs/2010.00951), 2023)), and its heterogenous variant (Ceni et al. [Random Oscillators Network for Time Series Processing](https://proceedings.mlr.press/v238/ceni24a/ceni24a.pdf), 2024)
 
-
-
-# TODOs:
-
-- Add more cells:
-- More examples, benchmarks, use cases
--  (maybe)Advanced Models such as:
-
-  - Linear recurrence models under the same API
-    - S4
-    - S5
-    - LRU
-
-  - (Controlled) Neural ODEs
-  - Transformer / RNN hybrids e.g. a prototype of RWKV
+## State Space Models (SSM)
+State space models are a class of recurrent network that use linear recurrence to perform forward and backward pass through time. In JAX this can be implemented efficiently using `jax.lax.associative_scan`.
+- **S5**: simplified SSM. An SSM that uses a diagonal recurrence matrix. (Smith et al. [Simplified State Space Layers for Sequence Modeling](https://arxiv.org/abs/2208.04933).
+- **Linear Recurrent Unit**: A model that adapts concepts to RNNs, employing linear recurrence and diagonal transiton matrix (Orvieto et al. [Resurrecting Recurrent Neural Networks for Long Sequences](https://arxiv.org/abs/2303.06349)).
