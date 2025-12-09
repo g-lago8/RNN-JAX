@@ -69,7 +69,7 @@ class BidirectionalRNNEncoder(eqx.Module):
             odim (int): output dimension
             key (PRNGKeyArray): random key
         """
-        self.forward_cell_cell = forward_cell
+        self.forward_cell = forward_cell
         self.backward_cell = backward_cell
         self.hdim = (
             self.forward_cell.hdim * 2
