@@ -9,10 +9,6 @@ from typing import Tuple
 from jaxtyping import Array
 
 
-# TODO: reimplement from zero, since the implementations in Equinox does
-#  not seem to have particular optimization tricks anyway.
-
-
 class LongShortTermMemoryCell(BaseCell):
     w_ih: Array  # w input gate
     w_ii: Array  # w input gate
@@ -96,10 +92,72 @@ class LongShortTermMemoryCell(BaseCell):
         input_gate = jax.nn.sigmoid(self.w_ii @ x + self.w_ih @ h + self.b_i)
         forget_gate = jax.nn.sigmoid(self.w_fi @ x + self.w_fh @ h + self.b_f)
         output_gate = jax.nn.sigmoid(self.w_oi @ x + self.w_oh @ h + self.b_o)
-        c_int = self.nonlinearity(self.w_ci @ x + self.w_ch @ h + self.b_c)
-        c_new = jax.nn.sigmoid(input_gate * c_int + forget_gate * c)
+        c_new = self.nonlinearity(self.w_ci @ x + self.w_ch @ h + self.b_c)
+        c_new = jax.nn.sigmoid(input_gate * c_new + forget_gate * c)
         h_new = self.nonlinearity(c_new) * output_gate
         return (h_new, c_new), h_new
+
+
+
+class GatedRecurrentUnitCell(BaseCell):
+    w_ih: Array  # w input gate
+    w_fh: Array  # w forget gate
+    b_i: Array  # b input gate
+    b_f: Array  # b forget gate
+    w_ii: Array  # w input gate
+    w_fi: Array  # w forget gate
+    nonlinearity: Callable
+
+    def __init__(
+        self,
+        idim,
+        hdim,
+        nonlinearity=jax.nn.relu,
+        kernel_init=jax.nn.initializers.glorot_normal(),
+        bias_init=jax.nn.initializers.zeros,
+        *,
+        key,
+        use_bias=None,
+    ):
+        """GRU cell
+
+        Args:
+            idim (int): input dimension
+            hdim (int): hidden dimension
+            key (PRNGKey): pseudo-RNG key
+            nonlinearity (Callable, optional): activation function (for gates, sigmoid is used). Defaults to jax.nn.relu.
+            kernel_init (jax.nn.Initializer, optional): weights initializer. Defaults to jax.nn.initializers.glorot_normal().
+            bias_init (jax.nn.Initializer, optional): bias initializer. Defaults to jax.nn.initializers.zeros.
+            use_bias (bool, optional): not used for now (bias always on). Defaults to None.
+        """
+        self.idim = idim
+        self.hdim = hdim
+        self.complex_state = False
+        self.states_shapes = (hdim,)
+        self.nonlinearity = nonlinearity
+        *subkeys, key = jr.split(key, 7)
+        self.w_ih = kernel_init(subkeys[0], (hdim, hdim))
+        self.w_fh = kernel_init(subkeys[1], (hdim, hdim))
+        self.w_ii = kernel_init(subkeys[2], (hdim, idim))
+        self.w_fi = kernel_init(subkeys[3], (hdim, idim))
+        self.b_i = bias_init(subkeys[4], (hdim,))
+        self.b_f = bias_init(subkeys[5], (hdim,))
+
+    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+        """Call the GRU cell
+
+        Args:
+            x (Array): Input array
+            state (Tuple[Array]): Hidden state of the GRU
+        Returns:
+            (h,), h (Tuple[Array], Array): Tuple of new hidden state, and the new hidden state
+        """
+        h = state[0]
+        reset_gate = jax.nn.sigmoid(self.w_fi @ x + self.w_fh @ h + self.b_f)
+        input_gate = jax.nn.sigmoid(self.w_ii @ x + self.w_ih @ (reset_gate * h) + self.b_i)
+        h_new = self.nonlinearity(self.w_ii @ x + self.w_ih @ (input_gate * h))
+        h_new = (1 - input_gate) * h + input_gate * h_new
+        return (h_new,), h_new
 
 
 # =======================  wrappers from equinox.nn =======================
