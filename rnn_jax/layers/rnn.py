@@ -66,7 +66,7 @@ class BidirectionalRNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, cell, odim, *, key, use_bias_out=True):
+    def __init__(self, fw_cell, bw_cell, odim, *, key, use_bias_out=True):
         """Bidirectional RNN, implemented using `jax.lax.scan`. This class takes a cell and iterates it through an input sequence, from first to last and from last to first.
 
         Args:
@@ -74,7 +74,7 @@ class BidirectionalRNN(eqx.Module):
             odim (int): output dimension
             key (PRNGKeyArray): random key
         """
-        self.encoder = BidirectionalRNNEncoder(cell)
+        self.encoder = BidirectionalRNNEncoder(fw_cell, bw_cell)
         self.odim = odim
         out_key, key = jr.split(key)
         self.hdim = self.encoder.hdim
@@ -98,7 +98,7 @@ class BidirectionalRNN(eqx.Module):
         hidden, hidden_reverse = self.encoder(x)
         return self.out_layer(jnp.concat([hidden[-1], hidden_reverse[-1]])), (
             hidden,
-            hidden_reverse,
+            hidden_reverse[::-1], # return backward states matching the forward order
         )
 
 
@@ -137,15 +137,21 @@ class DeepBidirectionalRNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, layers: Sequence[BaseCell], odim, *, key, use_bias_out=True):
-        assert len(layers) >= 1, (
-            "layers must be a non-empty sequence of Encoder objects, got an empty sequence"
+    def __init__(self, fw_layers: Sequence[BaseCell], bw_layers: Sequence[BaseCell],  odim, *, key, use_bias_out=True):
+        assert len(fw_layers) >= 1, (
+            "fw_layers must be a non-empty sequence of Encoder objects, got an empty sequence"
         )
-        self.layers = [BidirectionalRNNEncoder(cell) for cell in layers]
+        assert len(fw_layers) >= 1, (
+            "fw_layers must be a non-empty sequence of Encoder objects, got an empty sequence"
+        )
+        assert (lfw:=len(fw_layers)) == (lbw:=len(bw_layers)), (
+            f"layers must be of the same lenght, got {lfw} and {lbw}"
+        )
+        self.layers = [BidirectionalRNNEncoder(fw_cell, bw_cell) for fw_cell, bw_cell in zip(fw_layers, bw_layers)]
         self.odim = odim
         self.n_layers = len(self.layers)
         out_key, key = jr.split(key)
-        self.hdim = [l.hdim for l in layers]
+        self.hdim = [l.hdim for l in fw_layers]
         self.out_layer = eqx.nn.Linear(
             self.hdim[-1] * 2, self.odim, key=out_key, use_bias=use_bias_out
         )
@@ -154,10 +160,11 @@ class DeepBidirectionalRNN(eqx.Module):
         all_hidden = []
         for layer in self.layers:
             h, h_reverse = layer(x)
+            h_reverse = h_reverse[::-1] # reverse the states to match the forward order
             all_hidden.append((h, h_reverse))
             x = jnp.concat([h, h_reverse], axis=1)
         return self.out_layer(
-            jnp.concat([all_hidden[-1][0][-1], all_hidden[-1][1][-1]])
+            jnp.concat([all_hidden[-1][0][-1], all_hidden[-1][1][0]])
         ), all_hidden
 
 
@@ -199,7 +206,7 @@ if __name__ == "__main__":
     print(hcornn(x))
     # try the bidirectional impl.
     print("Bidirectional LSTM")
-    bidirectional_lstm = BidirectionalRNN(lstm_cell, 1, key=key)
+    bidirectional_lstm = BidirectionalRNN(lstm_cell, lstm_cell, 1, key=key)
     print(bidirectional_lstm(x))
 
     liprnn_cell = LipschitzRNNCell(
@@ -241,7 +248,7 @@ if __name__ == "__main__":
         ),  # notice the second - nth should take 2*hdim as input dim
     ]
 
-    deep_lstm = DeepBidirectionalRNN(cells, 1, key=key)
+    deep_lstm = DeepBidirectionalRNN(cells, cells, 1, key=key)
     print(deep_lstm(x))
 
     print("ClockWork RNN")
