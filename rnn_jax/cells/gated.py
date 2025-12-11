@@ -93,7 +93,7 @@ class LongShortTermMemoryCell(BaseCell):
         forget_gate = jax.nn.sigmoid(self.w_fi @ x + self.w_fh @ h + self.b_f)
         output_gate = jax.nn.sigmoid(self.w_oi @ x + self.w_oh @ h + self.b_o)
         c_new = self.nonlinearity(self.w_ci @ x + self.w_ch @ h + self.b_c)
-        c_new = jax.nn.sigmoid(input_gate * c_new + forget_gate * c)
+        c_new = input_gate * c_new + forget_gate * c
         h_new = self.nonlinearity(c_new) * output_gate
         return (h_new, c_new), h_new
 
