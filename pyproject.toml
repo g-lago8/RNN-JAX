@@ -18,7 +18,8 @@ dependencies = [
     "torch>=2.9.0",
     "torchvision>=0.24.0",
     "tqdm",
-    "jupyter>=1.0.0"
+    "jupyter>=1.0.0",
+    "einops"
 ]
 keywords = ["rnn", "jax", "equinox", "recurrent-neural-networks"]
 classifiers = [
@@ -42,3 +43,9 @@ dev = [
 
 [tool.setuptools]
 packages = { find = {} }
+
+[dependency-groups]
+dev = [
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+]
