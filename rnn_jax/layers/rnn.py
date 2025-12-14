@@ -7,9 +7,6 @@ The implemented classes are
 
 import sys
 from typing import Sequence, Union
-
-sys.path.append("..")
-sys.path.append("../cells")
 import equinox as eqx
 import jax
 import jax.random as jr
@@ -18,8 +15,6 @@ from jaxtyping import Inexact, Array, Complex
 from rnn_jax.cells.base import BaseCell
 from rnn_jax.utils.utils import concat_real_imag
 from rnn_jax.layers.encoder import RNNEncoder, BidirectionalRNNEncoder
-
-jax.config.update("jax_debug_nans", "true")
 
 
 class RNN(eqx.Module):
