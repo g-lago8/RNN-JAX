@@ -211,3 +211,6 @@ __marimo__/
 
 # macOS
 .DS_store
+
+# sphinx site build folder
+docs/*
