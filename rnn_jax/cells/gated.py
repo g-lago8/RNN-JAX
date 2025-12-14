@@ -28,9 +28,10 @@ class LongShortTermMemoryCell(BaseCell):
         self,
         idim,
         hdim,
-        nonlinearity=jax.nn.relu,
-        kernel_init=jax.nn.initializers.glorot_normal(),
-        bias_init=jax.nn.initializers.zeros,
+        nonlinearity=jax.nn.tanh,
+        kernel_init:Callable=jax.nn.initializers.glorot_normal(),
+        recurrent_kernel_init:Callable=jax.nn.initializers.uniform(),
+        bias_init:Callable=jax.nn.initializers.zeros,
         *,
         key,
         use_bias=None,
@@ -63,10 +64,10 @@ class LongShortTermMemoryCell(BaseCell):
         self.states_shapes = (hdim, hdim)
         self.nonlinearity = nonlinearity
         *subkeys, key = jr.split(key, 12)
-        self.w_ih = kernel_init(subkeys[0], (hdim, hdim))
-        self.w_fh = kernel_init(subkeys[1], (hdim, hdim))
-        self.w_oh = kernel_init(subkeys[2], (hdim, hdim))
-        self.w_ch = kernel_init(subkeys[3], (hdim, hdim))
+        self.w_ih = recurrent_kernel_init(subkeys[0], (hdim, hdim))
+        self.w_fh = recurrent_kernel_init(subkeys[1], (hdim, hdim))
+        self.w_oh = recurrent_kernel_init(subkeys[2], (hdim, hdim))
+        self.w_ch = recurrent_kernel_init(subkeys[3], (hdim, hdim))
         self.w_ii = kernel_init(subkeys[4], (hdim, idim))
         self.w_fi = kernel_init(subkeys[5], (hdim, idim))
         self.w_oi = kernel_init(subkeys[6], (hdim, idim))
@@ -86,7 +87,7 @@ class LongShortTermMemoryCell(BaseCell):
             state (Tuple[Array, Array]): Cell state and hidden state of the LSTM
 
         Returns:
-            (c, h), h (Tuple[Array, Array], Array): Tuple of new cell state and hidden state, and the new hidden state
+            (h, c), h (Tuple[Array, Array], Array): Tuple of new cell state and hidden state, and the new hidden state
         """
         h, c = state
         input_gate = jax.nn.sigmoid(self.w_ii @ x + self.w_ih @ h + self.b_i)
