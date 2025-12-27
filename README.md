@@ -58,3 +58,14 @@ outs = eqx.filter_vmap(rnn)(x)
 State space models are a class of recurrent network that use linear recurrence to perform forward and backward pass through time. In JAX this can be implemented efficiently using `jax.lax.associative_scan`.
 - **S5**: simplified SSM. An SSM that uses a diagonal recurrence matrix. (Smith et al. [Simplified State Space Layers for Sequence Modeling](https://arxiv.org/abs/2208.04933), 2022).
 - **Linear Recurrent Unit**: A model that adapts concepts to RNNs, employing linear recurrence and diagonal transiton matrix (Orvieto et al. [Resurrecting Recurrent Neural Networks for Long Sequences](https://arxiv.org/abs/2303.06349), 2023).
+
+
+## Third-Party Attributions
+
+This project includes dataset files sourced from:
+reservoirpy (https://github.com/reservoirpy/reservoirpy.git)
+Copyright (c)  Xavier Hinaut (2018) <xavier.hinaut@inria.fr>
+
+
+The dataset retains its original MIT License,
+found in `rnn_jax/datasets/_reservoirpy/LICENSE.md`.
