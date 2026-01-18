@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 import equinox as eqx
 from typing import TypeVar, Tuple
 from jaxtyping import Inexact, Array
-
+from jax.lax import associative_scan
 T = TypeVar("T")
 
 
@@ -41,20 +41,22 @@ class BaseSSMLayer(eqx.Module, ABC):
     def discretize(self, *args)->Tuple[Array, ...]:
         pass
 
-    @abstractmethod
-    def ssm_cell(self, a: T, b: T) -> T:
-        """A binary function given to the associative scan. Must be associative to work correctly
+    def ssm_cell(
+        self, a: Tuple[Array, Array], b: Tuple[Array, Array]
+    ) -> Tuple[Array, Array]:
+        matrix_pow_i, bx_i = a
+        matrix_pow_j, bx_j = b
+        return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
 
-        Args:
-            a (Array): first input
-            b (Array): second input
-        """
+
+    @abstractmethod
+    def postprocess_outputs(self, xs, hs)->Array:
         pass
 
-    @abstractmethod
-    def postprocess_outputs(self, xs, hs):
-        pass
-
-    @abstractmethod
     def __call__(self, xs, h0=None)->Array:
-        pass
+        seq_len = xs.shape[0]
+        lambda_elements = self.discretize(seq_len)
+        w_in_xs = self.preprocess_inputs(xs)
+        scan_elements = (lambda_elements, w_in_xs)
+        lambda_powers, hs = associative_scan(self.ssm_cell, scan_elements)
+        return self.postprocess_outputs(xs, hs)
