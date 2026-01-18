@@ -108,22 +108,7 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
         return einops.repeat(
             Lambda_bar, "state_dim -> seq_len state_dim", seq_len=seq_len
         ), W_in_bar
-    
-    def ssm_cell(
-        self, a: Tuple[Array, Array], b: Tuple[Array, Array]
-    ) -> Tuple[Array, Array]:
-        matrix_pow_i, bx_i = a
-        matrix_pow_j, bx_j = b
-        return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
-    
+        
     def postprocess_outputs(self, xs, hs):
         zs = (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
         return self.nonlinearity(zs)
-
-    def __call__(self, xs):
-        seq_len = xs.shape[0]
-        lambda_elements, B_bar = self.discretize(seq_len)
-        w_in_xs = self.preprocess_inputs(xs, B_bar)
-        scan_elements = (lambda_elements, w_in_xs)
-        lambda_powers, hs = associative_scan(self.ssm_cell, scan_elements)
-        return self.postprocess_outputs(xs, hs)
