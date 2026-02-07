@@ -97,9 +97,6 @@ class SimplifiedStateSpaceLayer(BaseSSMLayer):
             return jnp.array(L), jnp.array(V)
         else:
             raise NotImplementedError("The only possible initialization is 'leg-n' for now.")
-
-    def preprocess_inputs(self, xs: Array, B_bar: Array):
-        return jax.vmap(lambda x: B_bar @ x)(xs)
         
     def discretize(self, seq_len):
         Lambda_bar = jnp.exp(self.Lambda * self.Delta)

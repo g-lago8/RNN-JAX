@@ -92,19 +92,17 @@ class LinearRecurrentUnit(BaseSSMLayer):
 
         return nu_log, theta_log
 
-    def preprocess_inputs(self, xs):
-        scaled_W_in = einops.einsum(
+    def discretize(self, seq_len):
+        lambda_matrix = jnp.exp(-jnp.exp(self.nu_log) + 1j * jnp.exp(self.theta_log))
+        lambda_elements = einops.repeat(
+            lambda_matrix, "state_dim -> seq_len state_dim", seq_len=seq_len
+        ), 
+        W_in = einops.einsum(
             self.W_in,
             jnp.exp(self.gamma_log),
             "state_dim in_dim, state_dim -> state_dim in_dim"
         )
-        return jax.vmap(lambda x: scaled_W_in @ x)(xs)
-
-    def discretize(self, seq_len):
-        lambda_matrix = jnp.exp(-jnp.exp(self.nu_log) + 1j * jnp.exp(self.theta_log))
-        return einops.repeat(
-            lambda_matrix, "state_dim -> seq_len state_dim", seq_len=seq_len
-        )
+        return lambda_elements, W_in
 
 
     def postprocess_outputs(self, xs, hs):
