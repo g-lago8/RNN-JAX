@@ -69,3 +69,9 @@ Copyright (c)  Xavier Hinaut (2018) <xavier.hinaut@inria.fr>
 
 The dataset retains its original MIT License,
 found in `rnn_jax/datasets/_reservoirpy/LICENSE.md`.
+
+## To DOs (roughly in order of importance)
+- [ ] code to integrate reservoirpy sets
+- [ ] implement some out-of-the-box training methods
+- [ ] modular layers (would require models with additional inputs e.g. $\sigma(W_{in} x + W_{h} h + W_{m} m)$) where $m$ is the message from other modules)
+- [ ] message-passing nn with recurrent cells. Maybe the modular layer can be viewed as a MPNN.

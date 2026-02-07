@@ -1,14 +1,9 @@
-import jax
 from jax import random as jr
-from jax import nn
-import numpy as np
-from jax import numpy as jnp
 import equinox as eqx
-from jax.lax import associative_scan
-from typing import TypeVar, Tuple, Callable, Sequence, Optional
-from jaxtyping import Inexact, Array
+from typing import Sequence, Optional
+from jaxtyping import  Array
 from rnn_jax.ssm.base import BaseSSMLayer
-import einops
+from rnn_jax.ssm.mixers import Mixer
 
 
 class DeepStateSpaceModelEncoder(eqx.Module):
@@ -17,7 +12,7 @@ class DeepStateSpaceModelEncoder(eqx.Module):
     state_dim : Sequence[int]
     model_dim : Sequence[int]
     layers : Sequence[BaseSSMLayer]
-    mixers : Sequence[eqx.Module]
+    mixers : Sequence[Mixer]
     in_projection : eqx.nn.Linear | eqx.nn.Identity
     out_projection : eqx.nn.Linear | eqx.nn.Identity
 
@@ -25,9 +20,8 @@ class DeepStateSpaceModelEncoder(eqx.Module):
         self,
         in_dim: int,
         layers: Sequence[BaseSSMLayer],
-        mixers: Sequence[eqx.Module],
+        mixers: Sequence[Mixer],
         in_projection: bool = True,
-        out_projection: bool = False,
         out_dim: Optional[int] = None,
         *,
         key: Array
@@ -43,8 +37,7 @@ class DeepStateSpaceModelEncoder(eqx.Module):
         else:
             self.in_projection = eqx.nn.Identity()
     
-        if out_projection:
-            assert out_dim is not None, "if out_projection==True, then out_dim must not be None"
+        if out_dim is not None:
             self.out_projection = eqx.nn.Linear(in_features=self.model_dim[-1], out_features=out_dim, key=out_key)
         else:
             self.out_projection = eqx.nn.Identity()
