@@ -1,0 +1,6 @@
+include README.md
+recursive-include examples *.ipynb
+recursive-include examples *.py
+exclude examples/data/raw/*
+global-exclude *.py[cod] __pycache__ .DS_Store
+exclude examples/benchmarks *ipynb

@@ -205,6 +205,20 @@ css = [
 ]
 
 [[package]]
+name = "build"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "os_name == 'nt'" },
+    { name = "packaging" },
+    { name = "pyproject-hooks" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/18/94eaffda7b329535d91f00fe605ab1f1e5cd68b2074d03f255c7d250687d/build-1.4.0.tar.gz", hash = "sha256:f1b91b925aa322be454f8330c6fb48b465da993d1e7e7e6fa35027ec49f3c936", size = 50054, upload-time = "2026-01-08T16:41:47.696Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c5/0d/84a4380f930db0010168e0aa7b7a8fed9ba1835a8fbb1472bc6d0201d529/build-1.4.0-py3-none-any.whl", hash = "sha256:6a07c1b8eb6f2b311b96fcbdbce5dab5fe637ffda0fd83c9cac622e927501596", size = 24141, upload-time = "2026-01-08T16:41:46.453Z" },
+]
+
+[[package]]
 name = "certifi"
 version = "2025.11.12"
 source = { registry = "https://pypi.org/simple" }
@@ -999,6 +1013,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
+]
+
+[[package]]
+name = "joblib"
+version = "1.5.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/f2/d34e8b3a08a9cc79a50b2208a93dce981fe615b64d5a4d4abee421d898df/joblib-1.5.3.tar.gz", hash = "sha256:8561a3269e6801106863fd0d6d84bb737be9e7631e33aaed3fb9ce5953688da3", size = 331603, upload-time = "2025-12-15T08:41:46.427Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/91/984aca2ec129e2757d1e4e3c81c3fcda9d0f85b74670a094cc443d9ee949/joblib-1.5.3-py3-none-any.whl", hash = "sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713", size = 309071, upload-time = "2025-12-15T08:41:44.973Z" },
 ]
 
 [[package]]
@@ -2209,6 +2232,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pyproject-hooks"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/82/28175b2414effca1cdac8dc99f76d660e7a4fb0ceefa4b4ab8f5f6742925/pyproject_hooks-1.2.0.tar.gz", hash = "sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8", size = 19228, upload-time = "2024-09-29T09:24:13.293Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl", hash = "sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913", size = 10216, upload-time = "2024-09-29T09:24:11.978Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2425,6 +2457,20 @@ wheels = [
 ]
 
 [[package]]
+name = "reservoirpy"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "joblib" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e5/09/829026a80f10e9e01e80f9a3e0f393297ee1b3e0d9acb5f37c3f3deaf00b/reservoirpy-0.4.1.tar.gz", hash = "sha256:8ed14430fd94b8e01399fb7fd2958818932334f55e9e7c189b56223d7a79c541", size = 157624, upload-time = "2025-09-19T20:18:52.484Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/fc/18d4126d72f99097e33ec3ded2a924e2a225ae5f768feb9f4dce378182e5/reservoirpy-0.4.1-py3-none-any.whl", hash = "sha256:a92a1baecec536dc1a45640f84d401d15d6ba997826308e71775d5f82726a48b", size = 211479, upload-time = "2025-09-19T20:18:50.765Z" },
+]
+
+[[package]]
 name = "rfc3339-validator"
 version = "0.1.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2462,12 +2508,15 @@ name = "rnn-jax"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
+    { name = "build" },
     { name = "einops" },
     { name = "equinox" },
     { name = "jax" },
     { name = "jupyter" },
     { name = "matplotlib" },
     { name = "optax" },
+    { name = "pytest" },
+    { name = "reservoirpy" },
     { name = "torch" },
     { name = "torchvision" },
     { name = "tqdm" },
@@ -2492,6 +2541,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
+    { name = "build", specifier = ">=1.4.0" },
     { name = "einops" },
     { name = "equinox", specifier = ">=0.13.2" },
     { name = "isort", marker = "extra == 'dev'" },
@@ -2500,8 +2550,10 @@ requires-dist = [
     { name = "matplotlib" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "optax" },
+    { name = "pytest", specifier = ">=9.0.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "reservoirpy", specifier = ">=0.4.1" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "torch", specifier = ">=2.9.0" },
     { name = "torchvision", specifier = ">=0.24.0" },
