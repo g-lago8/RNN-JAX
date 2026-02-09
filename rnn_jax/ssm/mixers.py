@@ -67,9 +67,30 @@ class FFNMixer(Mixer):
         h = self.pre_nonlinearity(self.pre_projection(x))
         return self.post_nonlinearity(self.post_projection(h))
     
+    
 class IdentityMixer(Mixer):
-    def __init__(self, in_dim, out_dim, *, key):
+    def __init__(self, in_dim=None, out_dim=None, force_real=True, *, key=None):
+        """
+        A simple mixer that returns the input without any projection or nonlinearity.
+        """
         pass
 
     def __call__(self, x):
+        if isinstance(x, jnp.ndarray) and jnp.iscomplexobj(x):
+            return x.real
         return x
+    
+
+class NonLinearIdentityMixer(Mixer):
+    nonlinearity: Callable
+
+    def __init__(self, in_dim=None, out_dim=None, nonlinearity=jax.nn.swish, force_real=True, *, key=None):
+        """
+        A simple mixer that applies a nonlinearity to the input without any projection.
+        """
+        self.nonlinearity = nonlinearity
+
+    def __call__(self, x):
+        if isinstance(x, jnp.ndarray) and jnp.iscomplexobj(x):
+            x = x.real
+        return self.nonlinearity(x)
