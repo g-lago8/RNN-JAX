@@ -41,6 +41,7 @@ class BaseSSMLayer(eqx.Module, ABC):
     def discretize(self, *args)->Tuple[Array, ...]:
         raise NotImplementedError("discretize and postprocess_outputs should be implemented in the subclass")
 
+    @eqx.filter_vmap(in_axes=(None, 0, 0), out_axes=0)
     def ssm_cell(
         self, a: Tuple[Array, Array], b: Tuple[Array, Array]
     ) -> Tuple[Array, Array]:
