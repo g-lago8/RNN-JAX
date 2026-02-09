@@ -41,6 +41,7 @@ class AntiSymmetricRNNCell(BaseCell):
             h_std (float, optional): Standard deviation for hidden weights initialization. If None, defaults to 1/hdim.
             nonlinearity (Callable, optional): Activation function. Defaults to jax.nn.relu.
         """
+        super().__init__(idim, hdim)
         self.states_shapes = (hdim,)
         self.complex_state = False
         self.stepsize = stepsize
@@ -51,8 +52,8 @@ class AntiSymmetricRNNCell(BaseCell):
             in_std = 1 / idim
         if h_std == None:
             h_std = 1 / hdim
-        self.w_in = jr.normal(inkey, (hdim, idim)) * h_std
-        self.w_h = jr.normal(hkey, (hdim, hdim)) * in_std
+        self.w_in = jr.normal(inkey, (hdim, idim)) * in_std
+        self.w_hh = jr.normal(hkey, (hdim, hdim)) * h_std
         self.b = jnp.zeros((hdim,))
 
     def __call__(self, x: Float[Array, "idim"], state: Tuple[Array]):
@@ -74,6 +75,7 @@ class AntiSymmetricRNNCell(BaseCell):
 
 class GatedAntiSymmetricRNNCell(AntiSymmetricRNNCell):
     w_g: Array
+    b_g: Array
 
     def __init__(
         self,
