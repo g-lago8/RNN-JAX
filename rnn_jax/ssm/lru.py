@@ -5,7 +5,7 @@ import numpy as np
 from jax import numpy as jnp
 import equinox as eqx
 from jax.lax import associative_scan
-from typing import TypeVar, Tuple, Callable
+from typing import Optional, TypeVar, Tuple, Callable
 from jaxtyping import Inexact, Array
 from rnn_jax.ssm.base import BaseSSMLayer
 import einops
@@ -22,16 +22,16 @@ class LinearRecurrentUnit(BaseSSMLayer):
 
     def __init__(
         self,
-        in_dim,
+        in_dim: int,
         state_dim: int,
-        model_dim=None,
-        rho_min=0.0,
-        rho_max=0.99,
-        theta_min=0,
-        theta_max=2 * np.pi,
-        nonlinearity=jax.nn.gelu,
+        model_dim: Optional[int]=None,
+        rho_min: float=0.0,
+        rho_max: float=0.99,
+        theta_min: float=0.0,
+        theta_max: float=2 * np.pi,
+        nonlinearity: Callable=jax.nn.gelu,
         *,
-        key,
+        key: Array,
     ):
         super().__init__(in_dim, state_dim, model_dim)
         in_key, h_key, skip_key, out_key = jr.split(key, 4)
@@ -96,7 +96,7 @@ class LinearRecurrentUnit(BaseSSMLayer):
         lambda_matrix = jnp.exp(-jnp.exp(self.nu_log) + 1j * jnp.exp(self.theta_log))
         lambda_elements = einops.repeat(
             lambda_matrix, "state_dim -> seq_len state_dim", seq_len=seq_len
-        ), 
+        )
         W_in = einops.einsum(
             self.W_in,
             jnp.exp(self.gamma_log),
@@ -108,3 +108,5 @@ class LinearRecurrentUnit(BaseSSMLayer):
     def postprocess_outputs(self, xs, hs):
         zs = (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
         return self.nonlinearity(zs)
+    
+
