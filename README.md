@@ -3,7 +3,7 @@ Implementation of recurrent neural networks and deep state space in Jax and Equi
 
 # Usage 
 **Important:** JAX is a dependency, but it is not explicitly listed as so. Follow [the official Installation guide](https://docs.jax.dev/en/latest/installation.html) to install it for your target architecture.
-Then, the RNN-JAX can be installed with
+Then, RNN-JAX can be installed with pip
 ```
 pip install rnn-jax
 ```
