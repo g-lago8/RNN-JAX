@@ -1,9 +1,13 @@
 # RNN-JAX
-Implementation of various flavours of recurrent neural networks in Jax and Equinox
+Implementation of recurrent neural networks and deep state space in Jax and Equinox
 
 # Usage 
+**Important:** JAX is a dependency, but it is not explicitly listed as so. Follow [the official Installation guide](https://docs.jax.dev/en/latest/installation.html) to install it for your target architecture.
+Then, the RNN-JAX can be installed with
+```
+pip install rnn-jax
+```
 
-To start using the library, clone the repository, installing the dependencies in the `pyproject.toml`.
 
 ## Example usage
 Defining and running a model can be done in few lines
@@ -38,6 +42,7 @@ outs = eqx.filter_vmap(rnn)(x)
 
 - **Vanilla**: Standard RNNs, following an equation which is roughly equivalent to $h_{t+1} = \sigma(W_{h} h_t + W_{x}x_{t+1} + b)$
     - ElmanRNNCell: standard RNN (Elman, Finding Structure in Time, 1990)
+    - LeakyElmanCell: leaky integrator variant of an Elman RNN. This model rescales the update equation by the leakage term $\alpha\in(0,1]$, adding a leakage term $(1-\alpha)h_t$.
     - indRNNCell: independent RNN, where $W_h$ is _diagonal_ (Li et al., [Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN](https://arxiv.org/abs/1803.04831), 2018)
      
 - **Gated**: Gated RNNs, i.e. architectures with gates designed to adaptively forget past inputs
@@ -57,7 +62,7 @@ outs = eqx.filter_vmap(rnn)(x)
 ## State Space Models (SSM)
 State space models are a class of recurrent network that use linear recurrence to perform forward and backward pass through time. In JAX this can be implemented efficiently using `jax.lax.associative_scan`.
 - **S5**: simplified SSM. An SSM that uses a diagonal recurrence matrix. (Smith et al. [Simplified State Space Layers for Sequence Modeling](https://arxiv.org/abs/2208.04933), 2022).
-- **Linear Recurrent Unit**: A model that adapts concepts to RNNs, employing linear recurrence and diagonal transiton matrix (Orvieto et al. [Resurrecting Recurrent Neural Networks for Long Sequences](https://arxiv.org/abs/2303.06349), 2023).
+- **Linear Recurrent Unit**: Linear RNN with a diagonal complex-valued transiton matrix (Orvieto et al. [Resurrecting Recurrent Neural Networks for Long Sequences](https://arxiv.org/abs/2303.06349), 2023).
 
 
 ## Third-Party Attributions
