@@ -24,12 +24,12 @@ class LinearRecurrentUnit(BaseSSMLayer):
         self,
         in_dim: int,
         state_dim: int,
-        model_dim: Optional[int]=None,
-        rho_min: float=0.0,
-        rho_max: float=0.99,
-        theta_min: float=0.0,
-        theta_max: float=2 * np.pi,
-        nonlinearity: Callable=jax.nn.gelu,
+        model_dim: Optional[int] = None,
+        rho_min: float = 0.0,
+        rho_max: float = 0.99,
+        theta_min: float = 0.0,
+        theta_max: float = 2 * np.pi,
+        nonlinearity: Callable = jax.nn.gelu,
         *,
         key: Array,
     ):
@@ -100,13 +100,12 @@ class LinearRecurrentUnit(BaseSSMLayer):
         W_in = einops.einsum(
             self.W_in,
             jnp.exp(self.gamma_log),
-            "state_dim in_dim, state_dim -> state_dim in_dim"
+            "state_dim in_dim, state_dim -> state_dim in_dim",
         )
         return lambda_elements, W_in
 
-
     def postprocess_outputs(self, xs, hs):
-        zs = (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(lambda x: self.W_skip @ x)(xs)
+        zs = (jax.vmap(lambda h: self.W_out @ h)(hs)).real + jax.vmap(
+            lambda x: self.W_skip @ x
+        )(xs)
         return self.nonlinearity(zs)
-    
-

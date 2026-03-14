@@ -29,9 +29,9 @@ class LongShortTermMemoryCell(BaseCell):
         idim,
         hdim,
         nonlinearity=jax.nn.tanh,
-        kernel_init:Callable=jax.nn.initializers.glorot_normal(),
-        recurrent_kernel_init:Callable=jax.nn.initializers.uniform(),
-        bias_init:Callable=jax.nn.initializers.zeros,
+        kernel_init: Callable = jax.nn.initializers.glorot_normal(),
+        recurrent_kernel_init: Callable = jax.nn.initializers.uniform(),
+        bias_init: Callable = jax.nn.initializers.zeros,
         *,
         key,
         use_bias=None,
@@ -99,7 +99,6 @@ class LongShortTermMemoryCell(BaseCell):
         return (h_new, c_new), h_new
 
 
-
 class GatedRecurrentUnitCell(BaseCell):
     w_ih: Array  # w input gate
     w_fh: Array  # w forget gate
@@ -155,7 +154,9 @@ class GatedRecurrentUnitCell(BaseCell):
         """
         h = state[0]
         reset_gate = jax.nn.sigmoid(self.w_fi @ x + self.w_fh @ h + self.b_f)
-        input_gate = jax.nn.sigmoid(self.w_ii @ x + self.w_ih @ (reset_gate * h) + self.b_i)
+        input_gate = jax.nn.sigmoid(
+            self.w_ii @ x + self.w_ih @ (reset_gate * h) + self.b_i
+        )
         h_new = self.nonlinearity(self.w_ii @ x + self.w_ih @ (input_gate * h))
         h_new = (1 - input_gate) * h + input_gate * h_new
         return (h_new,), h_new

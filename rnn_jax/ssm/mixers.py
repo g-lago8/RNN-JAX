@@ -24,14 +24,7 @@ class GLUMixer(Mixer):
     main_projection: eqx.nn.Linear
     nonlinearity: Callable
 
-    def __init__(
-        self,
-        in_dim,
-        out_dim,
-        nonlinearity=jax.nn.swish,
-        *,
-        key
-        ):
+    def __init__(self, in_dim, out_dim, nonlinearity=jax.nn.swish, *, key):
         key1, key2 = jr.split(key)
         self.gate_projection = eqx.nn.Linear(in_dim, out_dim, key=key)
         self.main_projection = eqx.nn.Linear(in_dim, out_dim, key=key)
@@ -55,8 +48,8 @@ class FFNMixer(Mixer):
         pre_nonlinearity=jax.nn.swish,
         post_nonlinearity=jax.nn.swish,
         *,
-        key
-        ):
+        key,
+    ):
         key1, key2 = jr.split(key)
         self.pre_projection = eqx.nn.Linear(in_dim, hidden_dim, key=key1)
         self.post_projection = eqx.nn.Linear(hidden_dim, out_dim, key=key2)
@@ -66,8 +59,8 @@ class FFNMixer(Mixer):
     def __call__(self, x):
         h = self.pre_nonlinearity(self.pre_projection(x))
         return self.post_nonlinearity(self.post_projection(h))
-    
-    
+
+
 class IdentityMixer(Mixer):
     def __init__(self, in_dim=None, out_dim=None, force_real=True, *, key=None):
         """
@@ -79,12 +72,20 @@ class IdentityMixer(Mixer):
         if isinstance(x, jnp.ndarray) and jnp.iscomplexobj(x):
             return x.real
         return x
-    
+
 
 class NonLinearIdentityMixer(Mixer):
     nonlinearity: Callable
 
-    def __init__(self, in_dim=None, out_dim=None, nonlinearity=jax.nn.swish, force_real=True, *, key=None):
+    def __init__(
+        self,
+        in_dim=None,
+        out_dim=None,
+        nonlinearity=jax.nn.swish,
+        force_real=True,
+        *,
+        key=None,
+    ):
         """
         A simple mixer that applies a nonlinearity to the input without any projection.
         """

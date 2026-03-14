@@ -3,6 +3,7 @@ import jax.numpy as jnp
 from jaxtyping import Complex, Array
 import equinox as eqx
 
+
 def concat_real_imag(x: Complex[Array, "..."], axis=-1):
     """Concatenate real and image parts of an array
 
@@ -52,11 +53,9 @@ def filter_unstack_model(stacked_model, template):
     n_models = jax.tree_util.tree_leaves(stacked_model)[0].shape[0]
 
     def get_model(i):
-        model = jax.tree.map(
-            lambda x: x[i], stacked_model
-        )
+        model = jax.tree.map(lambda x: x[i], stacked_model)
         # re-insert static structure
         model = eqx.combine(model, template)
         return model
-    return [get_model(i) for i in range(n_models)]
 
+    return [get_model(i) for i in range(n_models)]

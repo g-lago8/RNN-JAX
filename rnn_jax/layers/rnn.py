@@ -93,7 +93,7 @@ class BidirectionalRNN(eqx.Module):
         hidden, hidden_reverse = self.encoder(x)
         return self.out_layer(jnp.concat([hidden[-1], hidden_reverse[-1]])), (
             hidden,
-            hidden_reverse[::-1], # return backward states matching the forward order
+            hidden_reverse[::-1],  # return backward states matching the forward order
         )
 
 
@@ -132,17 +132,28 @@ class DeepBidirectionalRNN(eqx.Module):
     odim: int
     out_layer: eqx.nn.Linear
 
-    def __init__(self, fw_layers: Sequence[BaseCell], bw_layers: Sequence[BaseCell],  odim, *, key, use_bias_out=True):
+    def __init__(
+        self,
+        fw_layers: Sequence[BaseCell],
+        bw_layers: Sequence[BaseCell],
+        odim,
+        *,
+        key,
+        use_bias_out=True,
+    ):
         assert len(fw_layers) >= 1, (
             "fw_layers must be a non-empty sequence of Encoder objects, got an empty sequence"
         )
         assert len(fw_layers) >= 1, (
             "fw_layers must be a non-empty sequence of Encoder objects, got an empty sequence"
         )
-        assert (lfw:=len(fw_layers)) == (lbw:=len(bw_layers)), (
+        assert (lfw := len(fw_layers)) == (lbw := len(bw_layers)), (
             f"layers must be of the same lenght, got {lfw} and {lbw}"
         )
-        self.layers = [BidirectionalRNNEncoder(fw_cell, bw_cell) for fw_cell, bw_cell in zip(fw_layers, bw_layers)]
+        self.layers = [
+            BidirectionalRNNEncoder(fw_cell, bw_cell)
+            for fw_cell, bw_cell in zip(fw_layers, bw_layers)
+        ]
         self.odim = odim
         self.n_layers = len(self.layers)
         out_key, key = jr.split(key)
@@ -155,7 +166,7 @@ class DeepBidirectionalRNN(eqx.Module):
         all_hidden = []
         for layer in self.layers:
             h, h_reverse = layer(x)
-            h_reverse = h_reverse[::-1] # reverse the states to match the forward order
+            h_reverse = h_reverse[::-1]  # reverse the states to match the forward order
             all_hidden.append((h, h_reverse))
             x = jnp.concat([h, h_reverse], axis=1)
         return self.out_layer(

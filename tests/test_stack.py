@@ -1,12 +1,13 @@
-"""Test stack / unstack functionality
-"""
+"""Test stack / unstack functionality"""
+
 import jax
 import jax.numpy as jnp
 import equinox as eqx
 import numpy
 from rnn_jax.cells import LongShortTermMemoryCell
-from rnn_jax.layers import RNNEncoder  
+from rnn_jax.layers import RNNEncoder
 from rnn_jax.utils.utils import filter_stack_model, filter_unstack_model
+
 
 def test_stack_unstack():
     key = jax.random.PRNGKey(0)
@@ -14,9 +15,7 @@ def test_stack_unstack():
     hdim = 8
     n_models = 5
     keys = jax.random.split(key, n_models)
-    models = [
-       RNNEncoder(LongShortTermMemoryCell(idim, hdim, key=k)) for k in keys
-    ]
+    models = [RNNEncoder(LongShortTermMemoryCell(idim, hdim, key=k)) for k in keys]
 
     stacked_model, template = filter_stack_model(models)
     unstacked_models = filter_unstack_model(stacked_model, template)
@@ -35,16 +34,15 @@ def test_stacked_fw_pass():
     seq_len = 5
 
     keys = jax.random.split(key, n_models)
-    models = [
-        RNNEncoder(LongShortTermMemoryCell(idim, hdim, key=k)) for k in keys
-    ]
+    models = [RNNEncoder(LongShortTermMemoryCell(idim, hdim, key=k)) for k in keys]
 
     stacked_model, template = filter_stack_model(models)
     x = jax.random.normal(key, (n_models, batch_size, seq_len, idim))
 
     def model_fw(model, x):
-        model = eqx.combine(model, template) # Combine with static structure
+        model = eqx.combine(model, template)  # Combine with static structure
         return eqx.filter_vmap(model)(x)
+
     stacked_out = eqx.filter_vmap(model_fw)(stacked_model, x)
 
     unstacked_models = filter_unstack_model(stacked_model, template)

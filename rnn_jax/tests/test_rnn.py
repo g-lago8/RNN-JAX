@@ -55,7 +55,7 @@ def _make_input(key, seq_len=SEQ_LEN, idim=IDIM):
     return jr.normal(key, (seq_len, idim))
 
 
-def _zeros_state(cell)->Tuple[Array, ...]:
+def _zeros_state(cell) -> Tuple[Array, ...]:
     """Build the zero initial state expected by a cell."""
     dtype = jnp.complex64 if cell.complex_state else jnp.float32
     return tuple(jnp.zeros(s, dtype=dtype) for s in cell.states_shapes)
@@ -343,25 +343,19 @@ class TestUnitaryEvolutionRNNCell:
     """Tests for the uRNN cell (complex-valued hidden state)."""
 
     def test_init_identity_perm(self):
-        cell = UnitaryEvolutionRNNCell(
-            IDIM, HDIM, permutation_type="identity", key=KEY
-        )
+        cell = UnitaryEvolutionRNNCell(IDIM, HDIM, permutation_type="identity", key=KEY)
         assert cell.complex_state is True
         assert jnp.array_equal(cell.perm, jnp.arange(HDIM))
 
     def test_init_random_perm(self):
-        cell = UnitaryEvolutionRNNCell(
-            IDIM, HDIM, permutation_type="random", key=KEY
-        )
+        cell = UnitaryEvolutionRNNCell(IDIM, HDIM, permutation_type="random", key=KEY)
         assert cell.complex_state is True
         # random permutation should be a permutation of arange
         assert set(cell.perm.tolist()) == set(range(HDIM))
 
     def test_invalid_perm_raises(self):
         with pytest.raises(ValueError):
-            UnitaryEvolutionRNNCell(
-                IDIM, HDIM, permutation_type="invalid", key=KEY
-            )
+            UnitaryEvolutionRNNCell(IDIM, HDIM, permutation_type="invalid", key=KEY)
 
     def test_forward_shapes(self):
         cell = UnitaryEvolutionRNNCell(IDIM, HDIM, key=KEY)
@@ -981,4 +975,3 @@ class TestCrossCutting:
         assert y.shape == (ODIM,)
         # all_outs should be real (encoder applies concat_real_imag)
         assert not jnp.iscomplexobj(all_outs)
-

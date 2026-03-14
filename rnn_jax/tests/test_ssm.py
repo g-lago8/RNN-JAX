@@ -168,9 +168,7 @@ class TestLinearRecurrentUnit:
             )
 
     def test_custom_nonlinearity(self):
-        lru = LinearRecurrentUnit(
-            IN_DIM, STATE_DIM, nonlinearity=jax.nn.relu, key=KEY
-        )
+        lru = LinearRecurrentUnit(IN_DIM, STATE_DIM, nonlinearity=jax.nn.relu, key=KEY)
         x = _make_input(KEY)
         y = lru(x)
         # relu output should be >= 0
@@ -259,9 +257,7 @@ class TestSimplifiedStateSpaceLayer:
     def test_multi_block_init(self):
         """S5 with multiple blocks for the Lambda matrix."""
         # state_dim must be divisible by n_blocks
-        s5 = SimplifiedStateSpaceLayer(
-            IN_DIM, STATE_DIM, blocks_lambda=2, key=KEY
-        )
+        s5 = SimplifiedStateSpaceLayer(IN_DIM, STATE_DIM, blocks_lambda=2, key=KEY)
         x = _make_input(KEY)
         y = s5(x)
         assert y.shape == (SEQ_LEN, STATE_DIM)
@@ -272,9 +268,7 @@ class TestSimplifiedStateSpaceLayer:
 
     def test_unknown_init_raises(self):
         with pytest.raises(NotImplementedError):
-            SimplifiedStateSpaceLayer(
-                IN_DIM, STATE_DIM, init_w_h="unknown", key=KEY
-            )
+            SimplifiedStateSpaceLayer(IN_DIM, STATE_DIM, init_w_h="unknown", key=KEY)
 
     def test_custom_nonlinearity(self):
         s5 = SimplifiedStateSpaceLayer(
@@ -483,7 +477,9 @@ class TestDeepStateSpaceModelEncoder:
     def test_with_glu_mixer(self):
         """Use GLUMixer instead of IdentityMixer."""
         keys = jr.split(KEY, 4)
-        lru = LinearRecurrentUnit(STATE_DIM, STATE_DIM, model_dim=STATE_DIM, key=keys[0])
+        lru = LinearRecurrentUnit(
+            STATE_DIM, STATE_DIM, model_dim=STATE_DIM, key=keys[0]
+        )
         mixer = GLUMixer(STATE_DIM, STATE_DIM, key=keys[1])
         model = DeepStateSpaceModelEncoder(
             in_dim=IN_DIM,
@@ -500,7 +496,9 @@ class TestDeepStateSpaceModelEncoder:
     def test_with_s5_layer(self):
         """Build an encoder using S5 layers instead of LRU."""
         keys = jr.split(KEY, 4)
-        s5 = SimplifiedStateSpaceLayer(STATE_DIM, STATE_DIM, model_dim=STATE_DIM, key=keys[0])
+        s5 = SimplifiedStateSpaceLayer(
+            STATE_DIM, STATE_DIM, model_dim=STATE_DIM, key=keys[0]
+        )
         mixer = IdentityMixer(key=keys[1])
         model = DeepStateSpaceModelEncoder(
             in_dim=IN_DIM,

@@ -70,7 +70,7 @@ class LeakyElmanCell(ElmanRNNCell):
         *,
         key,
     ):
-        """Leaky ELman cell. Withe respect to a normal Elman Cell, it adds a leak term alpha in [0, 1], and its update is  
+        """Leaky ELman cell. Withe respect to a normal Elman Cell, it adds a leak term alpha in [0, 1], and its update is
             h_t = alpha * Elman(h_{t-1}, x_t) + (1-alpha) * h_{t-1}
 
         Args:

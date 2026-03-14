@@ -134,7 +134,9 @@ def from_aeon_classification(
         X = np.array(X)
 
     if not len(X.shape) == 3:
-        raise ValueError(f"Expected a 3-dimensional array, got {len(X.shape)} dimensions.")
+        raise ValueError(
+            f"Expected a 3-dimensional array, got {len(X.shape)} dimensions."
+        )
 
     X_out = np.swapaxes(X, 1, 2)
     return X_out
