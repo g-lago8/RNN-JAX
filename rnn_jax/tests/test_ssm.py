@@ -537,6 +537,14 @@ class TestDeepStateSpaceModelEncoder:
         y = model(x)
         assert y.shape == (SEQ_LEN, STATE_DIM)
 
+    def test_sequential(self):
+        """Test parallel vs sequential application of recurrence."""
+
+        model = self._make_encoder(n_layers=2)
+        x = _make_input(KEY)
+        y_parallel = model(x)
+        y_sequential = model.call_sequential(x)
+        assert jnp.allclose(y_parallel, y_sequential, rtol=1e-5, atol=1e-5)
 
 # ===================================================================
 # CROSS-CUTTING / INTEGRATION TESTS
