@@ -17,6 +17,7 @@ from typing import TypeVar, Tuple
 import jax
 from jaxtyping import Inexact, Array
 from jax.lax import associative_scan
+
 T = TypeVar("T")
 
 
@@ -34,12 +35,18 @@ class BaseSSMLayer(eqx.Module, ABC):
             model_dim = state_dim
         self.model_dim = model_dim
 
-    def preprocess_inputs(self, xs: Inexact[Array, "seq_len model_dim"], w_in: Inexact[Array, "state_dim in_dim"]) -> Inexact[Array, " seq_len state_dim"]:
+    def preprocess_inputs(
+        self,
+        xs: Inexact[Array, "seq_len model_dim"],
+        w_in: Inexact[Array, "state_dim in_dim"],
+    ) -> Inexact[Array, " seq_len state_dim"]:
         return jax.vmap(lambda x: w_in @ x)(xs)
 
     @abstractmethod
-    def discretize(self, *args)->Tuple[Array, ...]:
-        raise NotImplementedError("discretize and postprocess_outputs should be implemented in the subclass")
+    def discretize(self, *args) -> Tuple[Array, ...]:
+        raise NotImplementedError(
+            "discretize and postprocess_outputs should be implemented in the subclass"
+        )
 
     @eqx.filter_vmap(in_axes=(None, 0, 0), out_axes=0)
     def ssm_cell(
@@ -49,14 +56,35 @@ class BaseSSMLayer(eqx.Module, ABC):
         matrix_pow_j, bx_j = b
         return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
 
-    @abstractmethod
-    def postprocess_outputs(self, xs, hs)->Array:
-        raise NotImplementedError("discretize and postprocess_outputs should be implemented in the subclass")
+    def ssm_cell_sequential(self, carry, scan_input):
+        A, Bu = scan_input
+        (x,) = carry
+        return A * x + Bu, A * x + Bu
 
-    def __call__(self, xs, h0=None)->Array:
-        seq_len = xs.shape[0]
+    @abstractmethod
+    def postprocess_outputs(self, xs, hs) -> Array:
+        raise NotImplementedError(
+            "discretize and postprocess_outputs should be implemented in the subclass"
+        )
+
+    def __call__(self, us, x0=None) -> Array:
+        seq_len = us.shape[0]
         lambda_elements, w_in = self.discretize(seq_len)
-        w_in_xs = self.preprocess_inputs(xs, w_in)
-        scan_elements = (lambda_elements, w_in_xs)
-        lambda_powers, hs = associative_scan(self.ssm_cell, scan_elements)
-        return self.postprocess_outputs(xs, hs)
+        w_in_us = self.preprocess_inputs(us, w_in)
+        scan_elements = (lambda_elements, w_in_us)
+        lambda_powers, xs = associative_scan(self.ssm_cell, scan_elements)
+        if x0 is not None:
+            xs = jax.vmap(lambda l, x: l * x0 + x)(
+                lambda_powers, xs
+            )  # sum the initial state multiplied for $\Lambda^k$
+        return self.postprocess_outputs(us, xs)
+
+    def call_sequential(self, us, x0=None) -> Array:
+        seq_len = us.shape[0]
+        if x0 is None:
+            x0 = jax.numpy.zeros(self.state_dim)
+        lambda_elements, w_in = self.discretize(seq_len)
+        w_in_xs = self.preprocess_inputs(us, w_in)
+        scan_elemnts = (lambda_elements, w_in_xs)
+        _, xs = jax.lax.scan(self.ssm_cell_sequential, x0, scan_elemnts)
+        return self.postprocess_outputs(us, xs)
