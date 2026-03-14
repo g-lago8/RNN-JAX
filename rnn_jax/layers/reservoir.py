@@ -5,7 +5,8 @@ import jax.numpy as jnp
 import equinox as eqx
 from rnn_jax.layers import RNNEncoder
 from rnn_jax.cells import BaseCell, ElmanRNNCell
-from jaxtyping import Float, Array
+from typing import List
+from jaxtyping import Float, Array, PyTree
 
 
 class ReservoirComputer(eqx.Module):
@@ -111,6 +112,40 @@ class ReservoirComputer(eqx.Module):
             return jax.lax.map(self.reservoir, reservoir_states, batch_size=batch_size)
 
 
+def scale_reservoir(
+    key, model: ReservoirComputer, scaling_values: PyTree, scaling_modes: PyTree
+):
+    """Scale the reservoir computer according to the values scaling_values and the modes scaling_modes
+
+    Args:
+        key (Array): JAX PRNG key
+        model (ReservoirComputer): Reservoir computer model to scale
+        scaling_values (PyTree): Values to scale the leaves with. Must be compatible with model
+        scaling_modes (PyTree): Modes to scale the leaves with, where 0 corresponds to "scale by 2-norm", 1 corresponds to "scale by spectral radius". Must be compatible with model
+    """
+
+    def scale_by_norm(A, expected_norm):
+        norm_a = jax.numpy.linalg.norm(A, 2)
+        return A / norm_a * expected_norm
+
+    def scale_by_spec_radius(A, expected_rho):
+        rho_a = jax.numpy.max(abs(jax.numpy.linalg.eigvals(A)))
+        return A / rho_a * expected_rho
+
+    def conditional_scale(
+        A, expected_value, mode
+    ):  # function applied to each leaf of the model
+        if mode is None:
+            return A
+        if mode:
+            return scale_by_spec_radius(A, expected_value)
+        else:
+            return scale_by_norm(A, expected_value)
+
+    new_model = jax.tree.map(conditional_scale, model, scaling_values, scaling_modes)
+    return new_model
+
+
 def init_reservoir_esn(
     key,
     esn: ReservoirComputer,
@@ -123,7 +158,7 @@ def init_reservoir_esn(
 ):
     assert isinstance(
         esn.reservoir.cell, ElmanRNNCell
-    ), """This function is meant to be used on Echo State Networks, "
+    ), """This function is meant to be used on Echo State Networks,
         i.e. reservoir computers with cell of type ElmanRNNCell."""
 
     # get the shapes
