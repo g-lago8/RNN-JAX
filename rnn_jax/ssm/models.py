@@ -100,3 +100,19 @@ class DeepStateSpaceModelEncoder(eqx.Module):
         elif self.pool_method == "last":
             xs = xs[-1]
         return self.out_projection(xs)
+    
+    def call_sequential(self, xs: Array) -> Array:
+        """Apply the model sequentially, processing one time step at a time."""
+        xs = jax.vmap(self.in_projection)(xs)
+
+        for ssm_layer, mixer in zip(self.layers, self.mixers):
+            xs = ssm_layer.call_sequential(xs)
+            xs = eqx.filter_vmap(mixer)(xs)  # type:ignore
+            
+        if self.pool_method == "none":
+            return jax.vmap(self.out_projection)(xs)
+        if self.pool_method == "mean":
+            xs = jnp.mean(xs, axis=0)
+        elif self.pool_method == "last":
+            xs = xs[-1]
+        return self.out_projection(xs)  

@@ -54,13 +54,8 @@ class BaseSSMLayer(eqx.Module, ABC):
     ) -> Tuple[Array, Array]:
         matrix_pow_i, bx_i = a
         matrix_pow_j, bx_j = b
-        return matrix_pow_i * matrix_pow_i, matrix_pow_j * bx_i + bx_j
-
-    def ssm_cell_sequential(self, carry, scan_input):
-        A, Bu = scan_input
-        (x,) = carry
-        return A * x + Bu, A * x + Bu
-
+        return matrix_pow_i * matrix_pow_j, matrix_pow_j * bx_i + bx_j
+    
     @abstractmethod
     def postprocess_outputs(self, xs, hs) -> Array:
         raise NotImplementedError(
@@ -81,10 +76,21 @@ class BaseSSMLayer(eqx.Module, ABC):
 
     def call_sequential(self, us, x0=None) -> Array:
         seq_len = us.shape[0]
-        if x0 is None:
-            x0 = jax.numpy.zeros(self.state_dim)
         lambda_elements, w_in = self.discretize(seq_len)
         w_in_xs = self.preprocess_inputs(us, w_in)
+        
+        # Initialize x0 with correct dtype if not provided
+        if x0 is None:
+            # Infer dtype from lambda_elements to handle complex SSMs
+            x0 = jax.numpy.zeros(self.state_dim, dtype=lambda_elements.dtype)
+        
         scan_elemnts = (lambda_elements, w_in_xs)
-        _, xs = jax.lax.scan(self.ssm_cell_sequential, x0, scan_elemnts)
+        
+        def scan_fn(carry, scan_input):
+            A, Bu = scan_input
+            x = carry
+            x_new = A * x + Bu
+            return x_new, x_new
+        
+        _, xs = jax.lax.scan(scan_fn, x0, scan_elemnts)
         return self.postprocess_outputs(us, xs)
