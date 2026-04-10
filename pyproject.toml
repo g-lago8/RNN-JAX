@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rnn-jax"
-version = "0.0.2"
+version = "0.0.3"
 description = "Implementation of various flavours of recurrent neural networks in Jax and Equinox"
 readme = "README.md"
 authors = [ { name = "Giacomo Lagomarsini" } ]
@@ -19,7 +19,8 @@ dependencies = [
     "torchvision>=0.24.0",
     "tqdm",
     "einops",
-    "reservoirpy>=0.4.1"
+    "reservoirpy>=0.4.1",
+    "pytest>=9.0.1",
 ]
 keywords = ["rnn", "jax", "equinox", "recurrent-neural-networks"]
 classifiers = [

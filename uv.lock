@@ -1387,7 +1387,7 @@ wheels = [
 
 [[package]]
 name = "rnn-jax"
-version = "0.0.2"
+version = "0.0.3"
 source = { editable = "." }
 dependencies = [
     { name = "einops" },
@@ -1395,6 +1395,7 @@ dependencies = [
     { name = "jax" },
     { name = "matplotlib" },
     { name = "optax" },
+    { name = "pytest" },
     { name = "reservoirpy" },
     { name = "torch" },
     { name = "torchvision" },
@@ -1427,6 +1428,7 @@ requires-dist = [
     { name = "matplotlib" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "optax" },
+    { name = "pytest", specifier = ">=9.0.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "reservoirpy", specifier = ">=0.4.1" },
