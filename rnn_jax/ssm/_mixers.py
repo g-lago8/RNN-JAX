@@ -7,7 +7,7 @@ import equinox as eqx
 from jax.lax import associative_scan
 from typing import TypeVar, Tuple, Callable, Sequence, Optional
 from jaxtyping import Inexact, Array
-from rnn_jax.ssm.base import BaseSSMLayer
+from rnn_jax.ssm._base import BaseSSMLayer
 import einops
 
 
@@ -74,7 +74,7 @@ class IdentityMixer(Mixer):
         return x
 
 
-class NonLinearIdentityMixer(Mixer):
+class NonLinearityMixer(Mixer):
     nonlinearity: Callable
 
     def __init__(

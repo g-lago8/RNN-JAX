@@ -5,7 +5,7 @@ import jax.random as jr
 import jax.numpy as jnp
 from typing import Callable
 from jaxtyping import Array, PRNGKeyArray, Float
-from rnn_jax.cells.base import BaseCell
+from rnn_jax.cells._base import BaseCell
 from jax.nn.initializers import Initializer
 
 

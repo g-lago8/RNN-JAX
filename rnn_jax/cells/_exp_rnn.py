@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
 from jax.scipy.linalg import expm  # optimized matrix exponentiation
-from rnn_jax.cells.base import BaseCell
+from rnn_jax.cells._base import BaseCell
 from typing import Optional, Sequence, Callable, Tuple
 from jaxtyping import (
     PyTree,

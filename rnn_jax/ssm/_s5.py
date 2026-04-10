@@ -7,7 +7,7 @@ import equinox as eqx
 from jax.lax import associative_scan
 from typing import TypeVar, Tuple, Callable
 from jaxtyping import Inexact, Array, Complex, Real
-from rnn_jax.ssm.base import BaseSSMLayer
+from rnn_jax.ssm._base import BaseSSMLayer
 import einops
 from itertools import product
 

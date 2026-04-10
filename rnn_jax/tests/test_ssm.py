@@ -25,8 +25,8 @@ from rnn_jax.ssm import (
     IdentityMixer,
     DeepStateSpaceModelEncoder,
 )
-from rnn_jax.ssm.mixers import FFNMixer, NonLinearIdentityMixer, Mixer
-from rnn_jax.ssm.s5 import leg_s_matrix, leg_n_matrix
+from rnn_jax.ssm._mixers import FFNMixer, NonLinearityMixer, Mixer
+from rnn_jax.ssm._s5 import leg_s_matrix, leg_n_matrix
 
 # ---------------------------------------------------------------------------
 # Fixtures / Constants
@@ -354,13 +354,13 @@ class TestNonLinearIdentityMixer:
     """Tests for the NonLinearIdentityMixer."""
 
     def test_applies_nonlinearity(self):
-        mixer = NonLinearIdentityMixer(nonlinearity=jax.nn.relu, key=KEY)
+        mixer = NonLinearityMixer(nonlinearity=jax.nn.relu, key=KEY)
         x = jnp.array([-1.0, 0.0, 1.0])
         y = mixer(x)
         assert jnp.allclose(y, jnp.array([0.0, 0.0, 1.0]))
 
     def test_complex_to_real(self):
-        mixer = NonLinearIdentityMixer(nonlinearity=jax.nn.relu, key=KEY)
+        mixer = NonLinearityMixer(nonlinearity=jax.nn.relu, key=KEY)
         x = jnp.array([1.0 + 2j, -1.0 + 0j])
         y = mixer(x)
         assert not jnp.iscomplexobj(y)

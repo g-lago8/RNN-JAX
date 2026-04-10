@@ -6,8 +6,8 @@ from jax import random as jr
 import equinox as eqx
 from typing import Sequence, Optional
 from jaxtyping import Array
-from rnn_jax.ssm.base import BaseSSMLayer
-from rnn_jax.ssm.mixers import Mixer
+from rnn_jax.ssm._base import BaseSSMLayer
+from rnn_jax.ssm._mixers import Mixer
 
 
 class DeepStateSpaceModelEncoder(eqx.Module):

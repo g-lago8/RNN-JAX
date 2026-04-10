@@ -5,7 +5,7 @@ import jax.random as jr
 import jax.numpy as jnp
 from typing import Callable
 from jaxtyping import Inexact, Array, PRNGKeyArray
-from rnn_jax.cells.base import BaseCell
+from rnn_jax.cells._base import BaseCell
 from jax.nn.initializers import Initializer
 
 
@@ -97,6 +97,43 @@ class LeakyElmanCell(ElmanRNNCell):
     def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh @ h + self.w_ih @ x + self.b)
+        new_h = self.leak_rate * new_h + (1 - self.leak_rate) * h
+        return (new_h,), new_h
+
+
+class WilsonCowanCell(LeakyElmanCell):
+
+    def __init__(
+        self,
+        idim,
+        hdim,
+        kernel_init=jax.nn.initializers.glorot_normal(),
+        recurrent_kernel_init=jax.nn.initializers.orthogonal(),
+        bias_init=jax.nn.initializers.zeros,
+        nonlinearity=jax.nn.relu,
+        leak_rate=1,
+        *,
+        key,
+    ):
+        """Wilson-Cowan cell. This type of RNN cell is inspired by the Wilson-Cowan model of neural dynamics, and its update is given by
+            h(t)' = nonlinearity(W_h h(t) + b) + W_x x(t) in continuous time, and is discretized as
+            h(t+1) = h(t) + leak_rate * (nonlinearity(W_h h(t) + b) + W_x x(t) - h(t)) = (1-leak_rate) * h(t) + leak_rate * nonlinearity(W_h h(t) + b) + leak_rate * W_x x(t)
+        """
+
+        super().__init__(
+            idim,
+            hdim,
+            kernel_init=kernel_init,
+            recurrent_kernel_init=recurrent_kernel_init,
+            bias_init=bias_init,
+            nonlinearity=nonlinearity,
+            leak_rate=leak_rate,
+            key=key,
+        )
+
+    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+        (h,) = state
+        new_h = self.nonlinearity(self.w_hh @ h + self.b) + self.w_ih @ x
         new_h = self.leak_rate * new_h + (1 - self.leak_rate) * h
         return (new_h,), new_h
 

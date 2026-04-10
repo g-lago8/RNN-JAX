@@ -36,8 +36,8 @@ from rnn_jax.layers import (
     DeepRNN,
     DeepBidirectionalRNN,
 )
-from rnn_jax.layers.encoder import RNNEncoder, BidirectionalRNNEncoder
-from rnn_jax.layers.reservoir import ReservoirComputer, init_reservoir_esn
+from rnn_jax.layers._encoder import RNNEncoder, BidirectionalRNNEncoder
+from rnn_jax.layers._reservoir import ReservoirComputer, init_reservoir_esn
 
 
 # ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 from jaxtyping import Inexact, Array, Complex
-from rnn_jax.cells.base import BaseCell
+from rnn_jax.cells._base import BaseCell
 from rnn_jax.utils.utils import concat_real_imag
 
 jax.config.update("jax_debug_nans", "true")

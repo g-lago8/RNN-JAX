@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
 from jaxtyping import Inexact
-from rnn_jax.cells.base import BaseCell
+from rnn_jax.cells._base import BaseCell
 from jax.nn.initializers import Initializer
 from typing import Tuple
 from jaxtyping import Array

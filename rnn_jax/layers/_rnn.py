@@ -12,9 +12,9 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 from jaxtyping import Inexact, Array, Complex
-from rnn_jax.cells.base import BaseCell
+from rnn_jax.cells._base import BaseCell
 from rnn_jax.utils.utils import concat_real_imag
-from rnn_jax.layers.encoder import RNNEncoder, BidirectionalRNNEncoder
+from rnn_jax.layers._encoder import RNNEncoder, BidirectionalRNNEncoder
 
 
 class RNN(eqx.Module):
@@ -172,100 +172,3 @@ class DeepBidirectionalRNN(eqx.Module):
         return self.out_layer(
             jnp.concat([all_hidden[-1][0][-1], all_hidden[-1][1][0]])
         ), all_hidden
-
-
-if __name__ == "__main__":
-    from rnn_jax.cells import (
-        UnitaryEvolutionRNNCell,
-        LongShortTermMemory,
-        ElmanRNNCell,
-        CoupledOscillatoryRNNCell,
-        LipschitzRNNCell,
-        ClockWorkRNNCell,
-    )
-
-    key = jr.key(0)
-    idim = 10
-    hdim = 16
-    urnn_cell = UnitaryEvolutionRNNCell(idim, hdim, use_bias_in=True, key=key)
-    urnn = RNN(urnn_cell, 1, key=key)
-    x = jr.normal(key, (100, idim))
-    print("uRNN")
-    print(urnn(x))
-    lstm_cell = LongShortTermMemory(idim, hdim, key=key)
-    lstm = RNN(lstm_cell, 1, key=key)
-    print("LSTM")
-    print(lstm(x))
-    rnn_cell = ElmanRNNCell(idim, hdim, key=key)
-    rnn = RNN(rnn_cell, 1, key=key)
-    print("RNN")
-    print(rnn(x))
-    cornn_cell = CoupledOscillatoryRNNCell(idim, hdim, 1.0, 1.0, 0.01, key=key)
-    cornn = RNN(cornn_cell, 1, key=key)
-    print("coRNN")
-    print(cornn(x))
-    hcornn_cell = CoupledOscillatoryRNNCell(
-        idim, hdim, (0, 1.0), (-1.0, 1.0), dt=0.01, heterogeneous=True, key=key
-    )
-    hcornn = RNN(hcornn_cell, 1, key=key)
-    print("hcoRNN")
-    print(hcornn(x))
-    # try the bidirectional impl.
-    print("Bidirectional LSTM")
-    bidirectional_lstm = BidirectionalRNN(lstm_cell, lstm_cell, 1, key=key)
-    print(bidirectional_lstm(x))
-
-    liprnn_cell = LipschitzRNNCell(
-        idim, hdim, 0.65, 1.0, 0.65, 1.0, 0.001, 1 / 16, key=key
-    )
-    liprnn = RNN(liprnn_cell, 1, key=key)
-    print("Lipschitz RNN, Euler")
-    print(liprnn(x))
-
-    liprnn_cell = LipschitzRNNCell(
-        idim, hdim, 0.65, 1.0, 0.65, 1.0, 0.001, 1 / 16, key=key, discretization="rk2"
-    )
-    liprnn = RNN(liprnn_cell, 1, key=key)
-    print("Lipschitz RNN, RK2")
-    print(liprnn(x))
-
-    # deep rnn
-
-    print("deep LSTM")
-    cells = [
-        LongShortTermMemory(idim, hdim, key=key),
-        LongShortTermMemory(
-            hdim, hdim, key=key
-        ),  # notice the second - nth should take hdim as input dim
-    ]
-
-    deep_lstm = DeepRNN(cells, 1, key=key)
-
-    print(deep_lstm(x))
-
-    print("deep bidirectional LSTM")
-    cells = [
-        LongShortTermMemory(idim, hdim, key=key),
-        LongShortTermMemory(
-            2 * hdim, hdim, key=key
-        ),  # notice the second - nth should take 2*hdim as input dim
-        LongShortTermMemory(
-            2 * hdim, hdim, key=key
-        ),  # notice the second - nth should take 2*hdim as input dim
-    ]
-
-    deep_lstm = DeepBidirectionalRNN(cells, cells, 1, key=key)
-    print(deep_lstm(x))
-
-    print("ClockWork RNN")
-
-    cw_rnn_cell = ClockWorkRNNCell(
-        idim,
-        [hdim, hdim - 1, hdim + 1],
-        periods=[2, 4, 8],
-        nonlinearity=jax.nn.relu,
-        key=key,
-    )
-    cw_rnn = RNN(cw_rnn_cell, 1, key=key)
-    out = cw_rnn(x)
-    print(out[-1][-1])
