@@ -35,6 +35,7 @@ from rnn_jax.layers import (
     BidirectionalRNN,
     DeepRNN,
     DeepBidirectionalRNN,
+    AutoregressiveRNN,
 )
 from rnn_jax.layers._encoder import RNNEncoder, BidirectionalRNNEncoder
 from rnn_jax.layers._reservoir import ReservoirComputer, init_reservoir_esn
@@ -924,6 +925,32 @@ class TestReservoirComputer:
                 input_scaling=0.5,
                 bias_scaling=0.1,
             )
+
+
+
+# ===================================================================
+# AUTOREGRESSIVE TESTS
+# ===================================================================
+
+
+class TestAutoregressiveRNN:
+    """Tests for the AutoregressiveRNN wrapper."""
+
+    def test_output_shape(self):
+        k1, k2 = jr.split(KEY)
+        cell = ElmanRNNCell(IDIM, HDIM, key=k1)
+        model = AutoregressiveRNN([cell], key=k2)
+        x = _make_input(KEY)
+        y = model(x, n_steps=SEQ_LEN)
+        assert y.shape == (SEQ_LEN * 2, IDIM) # input + generated
+
+    def test_jit(self):
+        k1, k2 = jr.split(KEY)
+        cell = ElmanRNNCell(IDIM, HDIM, key=k1)
+        model = AutoregressiveRNN([cell], key=k2)
+        x = _make_input(KEY)
+        y = eqx.filter_jit(model)(x, n_steps=SEQ_LEN)
+        assert y.shape == (SEQ_LEN * 2, IDIM)
 
 
 # ===================================================================
