@@ -33,9 +33,11 @@ class BaseCell(eqx.Module, ABC):
         Returns:
             Tuple[Tuple[Array, ...], Array]: Updated state tuple and output array.
         """
-        return state, state[0]
+        raise NotImplementedError(
+            "__call__ should be implemented in the subclass, defining the cell's forward pass"
+        )
 
-    # . TODO: delete attributes states_shapes, complex_state and make something like
+    # TODO: delete attributes states_shapes, complex_state and make something like
     # @abstractmethod
     # def init_state(self, *, key, batch_dims=())->Tuple[Array, ...]:
     #     pass
