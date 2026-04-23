@@ -7,6 +7,12 @@ RNN-JAX can be installed with pip
 ```
 pip install rnn-jax
 ```
+or from source, installing the dependencies with `uv`
+```
+git clone https://github.com/g-lago8/rnn-jax.git
+cd rnn-jax
+uv sync
+```
 
 
 ## Example usage
@@ -16,8 +22,8 @@ Defining and running a model can be done in few lines
 import jax
 import equinox as eqx
 import jax.random as jr
-from rnn_jax.cells import ElmanRNNCell
-from rnn_jax.layers import RNN
+from rnn_jax.cells import ElmanRNNCell # cell types are defined in the `cells` module
+from rnn_jax.layers import RNN # the RNN layer is defined in the `layers` module
 
 
 key = jr.key(0)  # PRNGkey
@@ -43,22 +49,24 @@ outs = eqx.filter_vmap(rnn)(x)
 - **Vanilla**: Standard RNNs, following an equation which is roughly equivalent to $h_{t+1} = \sigma(W_{h} h_t + W_{x}x_{t+1} + b)$
     - ElmanRNNCell: standard RNN (Elman, Finding Structure in Time, 1990)
     - LeakyElmanCell: leaky integrator variant of an Elman RNN. This model rescales the update equation by the leakage term $\alpha\in(0,1]$, adding a leakage term $(1-\alpha)h_t$.
+    - WilsonCowanCell: a variant of the Elman RNN inspired by the Wilson-Cowan model of neuronal dynamics. In discrete time this model is similar to a leaky Elman cell, but the non-linearity is only applied to the recurrent term, as follows: $h_{t+1} = (1-\alpha)h_t + \alpha(\sigma(W_{h} h_t) + W_{x}x_{t+1} + b)$ (Wilson and Cowan, [Excitatory and inhibitory interactions in localized populations of model neurons](https://doi.org/10.1016/S0006-3495(72)86068-5), 1972)
     - indRNNCell: independent RNN, where $W_h$ is _diagonal_ (Li et al., [Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN](https://arxiv.org/abs/1803.04831), 2018)
      
 - **Gated**: Gated RNNs, i.e. architectures with gates designed to adaptively forget past inputs
     - LongShortTermMemoryCell: LSTM cell (Hochreiter and Schmidhuber, Long Short-Term-Memory, 1997)
     - GatedRecurrentUnit: GRU cell (Cho et al. [Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation](https://arxiv.org/abs/1406.1078), 2014)
 
-- **Antisymmetric**: Architectures imposing an antisymmetric structure to the recurrence matrix $W_h$
+- **Stable Models**: Architectures imposing an antisymmetric structure to the recurrence matrix $W_h$
+    - UnitaryEvolutionRNNCell: a flavor of Unitary RNN, that parametrizes the recurrence matrix to be unitary through Fourier transforms and Householder reflectors (Arjovsky et al. [Unitary Evolution Recurrent Neural Networks](https://arxiv.org/abs/1511.06464), 2016)
     - AntiSymmetricRNNCell: Antisymmetric RNN, where the update is described by $h_{t+1} = h_t + \sigma((W_{h} -W_{h}^T) h_t + W_{x}x_{t+1} + b)$ (Chang et al. [AntisymmetricRNN: A Dynamical System View on Recurrent Neural Networks](https://arxiv.org/abs/1902.09689), 2019)
     - GatedAntiSymmetricRNNCell: gated version of the antisymmetric RNN (same reference as above)
-
-- **Other Recurrent Models**
-    - ClockWorkRNNCell: Clockwork RNN, an architecture that processes inputs at different time scales (Koutník et al. [A Clockwork RNN](https://arxiv.org/abs/1402.3511), 2014)
+    - NonNormalRNNCell: a stable RNN architecture based on a non-normal transition matrix (Zhang et al. [Non-normal Recurrent Neural Network (nnRNN): learning long time dependencies while improving expressivity with transient dynamics](https://arxiv.org/abs/1905.12080), 2019)
     - LipschitzRNNCell: Lipschitz RNN, an architecture grounded in continuous time dymamical systems (Erichson et al. [Lipschitz Recurrent Neural Networks](https://arxiv.org/abs/2006.12070), 2020)
-    - UnitaryEvolutionRNNCell: a flavor of Unitary RNN, that parametrizes the recurrence matrix to be unitary through Fourier transforms and Householder reflectors (Arjovsky et al. [Unitary Evolution Recurrent Neural Networks](https://arxiv.org/abs/1511.06464), 2016)
-    - CoupledOscillatoryRNNCell: an RNN baased on oscillator dynamical systems (Rusch and Mishra, [Coupled Oscillatory Recurrent Neural Network (coRNN)](https://arxiv.org/abs/2010.00951), 2023), and its heterogenous variant (Ceni et al. [Random Oscillators Network for Time Series Processing](https://proceedings.mlr.press/v238/ceni24a/ceni24a.pdf), 2024)
+    - CoupledOscillatoryRNNCell: an RNN based on oscillator dynamical systems (Rusch and Mishra, [Coupled Oscillatory Recurrent Neural Network (coRNN)](https://arxiv.org/abs/2010.00951), 2023), and its heterogenous variant (Ceni et al. [Random Oscillators Network for Time Series Processing](https://proceedings.mlr.press/v238/ceni24a/ceni24a.pdf), 2024)
+- **Other Models**
+    - ClockWorkRNNCell: Clockwork RNN, an architecture that processes inputs at different time scales (Koutník et al. [A Clockwork RNN](https://arxiv.org/abs/1402.3511), 2014)
 
+   
 ## State Space Models (SSM)
 State space models are a class of recurrent network that use linear recurrence to perform forward and backward pass through time. In JAX this can be implemented efficiently using `jax.lax.associative_scan`.
 - **S5**: simplified SSM. An SSM that uses a diagonal recurrence matrix. (Smith et al. [Simplified State Space Layers for Sequence Modeling](https://arxiv.org/abs/2208.04933), 2022).
@@ -74,9 +82,3 @@ Copyright (c)  Xavier Hinaut (2018) <xavier.hinaut@inria.fr>
 
 The dataset retains its original MIT License,
 found in `rnn_jax/datasets/_reservoirpy/LICENSE.md`.
-
-## To DOs (roughly in order of importance)
-- [ ] code to integrate reservoirpy sets
-- [ ] implement some out-of-the-box training methods
-- [ ] modular layers (would require models with additional inputs e.g. $\sigma(W_{in} x + W_{h} h + W_{m} m)$) where $m$ is the message from other modules)
-- [ ] message-passing nn with recurrent cells. Maybe the modular layer can be viewed as a MPNN.
