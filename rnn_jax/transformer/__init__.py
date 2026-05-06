@@ -1,0 +1,1 @@
+from rnn_jax.transformer._linear_attention import LinearAttentionLayer

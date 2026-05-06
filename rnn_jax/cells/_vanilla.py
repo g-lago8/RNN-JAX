@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 import equinox as eqx
 import jax
 import jax.random as jr
@@ -48,7 +48,7 @@ class ElmanRNNCell(BaseCell):
         self.nonlinearity = nonlinearity
 
     def __call__(
-        self, x: Array, state: Tuple[Array, ...]
+        self, x: Array, state: Tuple[Array, ...], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh @ h + self.w_ih @ x + self.b)
@@ -94,7 +94,7 @@ class LeakyElmanCell(ElmanRNNCell):
         )
         self.leak_rate = leak_rate
 
-    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+    def __call__(self, x: Array, state: Tuple[Array], *, key: Optional[Array] = None) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh @ h + self.w_ih @ x + self.b)
         new_h = self.leak_rate * new_h + (1 - self.leak_rate) * h
@@ -131,7 +131,7 @@ class WilsonCowanCell(LeakyElmanCell):
             key=key,
         )
 
-    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+    def __call__(self, x: Array, state: Tuple[Array], *, key: Optional[Array] = None) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh @ h + self.b) + self.w_ih @ x
         new_h = self.leak_rate * new_h + (1 - self.leak_rate) * h
@@ -175,7 +175,7 @@ class IndRNNCell(BaseCell):
         self.b = bias_init(bkey, hdim)
         self.nonlinearity = nonlinearity
 
-    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+    def __call__(self, x: Array, state: Tuple[Array], *, key: Optional[Array] = None) -> Tuple[Tuple[Array], Array]:
         (h,) = state
         new_h = self.nonlinearity(self.w_hh * h + self.w_ih @ x + self.b)
         return (new_h,), new_h

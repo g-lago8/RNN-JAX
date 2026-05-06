@@ -1,4 +1,4 @@
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Optional, Optional
 import jax
 import jax.numpy as jnp
 import jax.random as jr
@@ -116,7 +116,7 @@ class LipschitzRNNCell(BaseCell):
             raise ValueError("unrecognized discretization method")
 
     def __call__(
-        self, x: Array, state: Tuple[Array, Array]
+        self, x: Array, state: Tuple[Array, Array], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array, Array], Array]:
         h, z = state
         W = self._W()

@@ -2,7 +2,7 @@ import equinox as eqx
 import jax
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 from jaxtyping import Array, Inexact
 
 
@@ -24,7 +24,7 @@ class BaseCell(eqx.Module, ABC):
 
     @abstractmethod
     def __call__(
-        self, x: Inexact[Array, "hdim"], state: Tuple[Array, ...]
+        self, x: Inexact[Array, "hdim"], state: Tuple[Array, ...], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array, ...], Array]:
         """Call the RNN cell. Should be implemented in subclasses.
         Args:

@@ -4,7 +4,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from rnn_jax.cells._base import BaseCell
-from typing import Sequence, Callable, Tuple
+from typing import Sequence, Callable, Tuple, Optional, Optional
 from jaxtyping import Array, Float
 
 
@@ -79,7 +79,7 @@ class CoupledOscillatoryRNNCell(BaseCell):
         self.nonlinearity = nonlinearity
 
     def __call__(
-        self, x: Array, state: Tuple[Array, Array]
+        self, x: Array, state: Tuple[Array, Array], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array, Array], Array]:
         h, z = state
         z_new = (

@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Optional, Optional
 import jax
 import jax.numpy as jnp
 import jax.random as jr
@@ -78,7 +78,7 @@ class LongShortTermMemoryCell(BaseCell):
         self.b_f = jnp.ones((hdim,))
 
     def __call__(
-        self, x: Array, state: Tuple[Array, Array]
+        self, x: Array, state: Tuple[Array, Array], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array, Array], Array]:
         """Call the LSTM cell
 
@@ -143,7 +143,7 @@ class GatedRecurrentUnitCell(BaseCell):
         self.b_i = bias_init(subkeys[4], (hdim,))
         self.b_f = bias_init(subkeys[5], (hdim,))
 
-    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+    def __call__(self, x: Array, state: Tuple[Array], *, key: Optional[Array] = None) -> Tuple[Tuple[Array], Array]:
         """Call the GRU cell
 
         Args:
@@ -186,7 +186,7 @@ class LongShortTermMemory(BaseCell):
         )  # Initialize the forget gate bias to ones (biases are incorporated in one single vector)
 
     def __call__(
-        self, x: jax.Array, state: Tuple[Array, ...]
+        self, x: jax.Array, state: Tuple[Array, ...], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array, Array], Array]:
         h, c = self.lstm(x, state)
         return (h, c), h
@@ -208,6 +208,6 @@ class GatedRecurrentUnit(BaseCell):
         self.states_shapes = (hdim,)
         self.gru = eqx.nn.GRUCell(idim, hdim, key=key, **gru_kwargs)
 
-    def __call__(self, x: Array, state: Tuple[Array]) -> Tuple[Tuple[Array], Array]:
+    def __call__(self, x: Array, state: Tuple[Array], *, key: Optional[Array] = None) -> Tuple[Tuple[Array], Array]:
         h = self.gru(x, state[0])
         return (h,), h
