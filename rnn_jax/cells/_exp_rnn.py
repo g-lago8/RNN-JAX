@@ -56,7 +56,7 @@ class ExpRNNCell(eqx.Module):
             nonlinearity if nonlinearity is not None else lambda x: jnp.maximum(0, x)
         )  # default nonlinearity is ReLU
 
-    def __call__(self, x, h):
+    def __call__(self, x, h, *, key: Optional[Array] = None):
         # Materialize the normal matrix P
         P = expm(self.A - jnp.conjugate(self.A).T)
         return self.nonlinearity((P @ h + self.w_in @ x + self.bias).real)
@@ -115,7 +115,7 @@ class NonNormalRNNCells(eqx.Module):
             nonlinearity if nonlinearity is not None else lambda x: jnp.maximum(0, x)
         )  # default nonlinearity is ReLU
 
-    def __call__(self, x, h):
+    def __call__(self, x, h, *, key: Optional[Array] = None):
         # Materialize the normal matrix P
         P = expm(self.A - jnp.conjugate(self.A).T)
         # input processing

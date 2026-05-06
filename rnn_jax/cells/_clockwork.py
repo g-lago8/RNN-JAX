@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple, Sequence, Union
+from typing import Callable, List, Tuple, Sequence, Union, Optional, Optional
 import collections.abc as abc
 import jax
 import jax.numpy as jnp
@@ -148,7 +148,7 @@ class ClockWorkRNNCell(BaseCell):
         return blocks
 
     def __call__(
-        self, x: Array, state: Tuple[Array, ...]
+        self, x: Array, state: Tuple[Array, ...], *, key: Optional[Array] = None
     ) -> Tuple[Tuple[Array, ...], Array]:
         """Call the clockwork RNN
 

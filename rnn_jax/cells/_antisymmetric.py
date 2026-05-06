@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 import equinox as eqx
 import jax
 import jax.random as jr
@@ -56,7 +56,7 @@ class AntiSymmetricRNNCell(BaseCell):
         self.w_hh = jr.normal(hkey, (hdim, hdim)) * h_std
         self.b = jnp.zeros((hdim,))
 
-    def __call__(self, x: Float[Array, "idim"], state: Tuple[Array]):
+    def __call__(self, x: Float[Array, "idim"], state: Tuple[Array], *, key: Optional[Array] = None):
         """Call the Antisymmetric RNN Cell.
 
         Args:
@@ -112,7 +112,7 @@ class GatedAntiSymmetricRNNCell(AntiSymmetricRNNCell):
         self.w_g = jr.normal(key2, (hdim, idim))
         self.b_g = jnp.zeros((hdim,))
 
-    def __call__(self, x: Array, state: Tuple[Array]):
+    def __call__(self, x: Array, state: Tuple[Array], *, key: Optional[Array] = None):
         """Call the Gated Antisymmetric RNN Cell.
         Args:
             x (Array): Input array of shape (idim,).

@@ -108,7 +108,7 @@ class UnitaryEvolutionRNNCell(BaseCell):
         h = jnp.exp(1j * self.diag3) * h
         return h
 
-    def __call__(self, x: Inexact[Array, "idim"], state) -> Tuple[Tuple[Array], Array]:
+    def __call__(self, x: Inexact[Array, "idim"], state, *, key: Optional[Array] = None) -> Tuple[Tuple[Array], Array]:
         """Call the unitary evolution RNN. The update at time t is given by
 
             h_t = modReLU(W @ h_{t-1} + V @ x_t),
@@ -128,7 +128,7 @@ class UnitaryEvolutionRNNCell(BaseCell):
             x (Inexact[Array, &#39;idim&#39;]): input vector
             state (Tuple[Array]): state of the system (i.e. (h,) in this case)
         """
-        (h,) = state  # carry for this cell is only the hidden state!
+        (h,) = state
         x = self.in_layer(x)
         h = self._hh_layer(h)
         h = self.nonlinearity(h + x)
